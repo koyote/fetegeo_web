@@ -15,6 +15,14 @@
 				map = new google.maps.Map(document.getElementById('map'), mapOptions);
 			}
 			
+			function getBounds(coorArray) {
+				var bounds = new google.maps.LatLngBounds();
+				for (i = 0, len = coorArray.length; i < len; i++) {
+					bounds.extend(coorArray[i]);
+				}
+				return bounds;
+			}
+			
 // TODO: Stop preloading all of this; it's too slow, uses up all the RAM and stupid.
 //		 Lets make it load onClick!
 
@@ -56,47 +64,48 @@
 					$('.results').each(function() {
 						$(this).click(function() {
 							var result = resultByID[this.id];
-							var coordinateArray = [];
+							var coorArray = [];
 							for (i = 0; i < result.lat.length; i++) {
-								coordinateArray[i] = new google.maps.LatLng(result.lat[i], result.lng[i]);
+								coorArray[i] = new google.maps.LatLng(result.lat[i], result.lng[i]);
 							}
 							switch (result.type) {
 								case'Point':
-									var coord = new google.maps.LatLng(result.lat, result.lng);
+									var coor = new google.maps.LatLng(result.lat, result.lng);
 									if (marker)
 										marker.setMap();
 									marker = new google.maps.Marker({
 										map : map,
-										position : coord
+										position : coor
 									});
 									map.setZoom(15);
 									break;
 								case 'LineString': 
 								case 'MultiLineString':
 									if (polyline)
-										polyline.setMap(map);
+										polyline.setMap();
 									polyline = new google.maps.Polyline({
-										path: coordinateArray,
+										path: coorArray,
 										strokeColor: '#FF0000',
 										strokeOpacity: 1.0,
-										strokeWeight: 2
+										strokeWeight: 2,
+										map: map
 									});
-									polyline.setMap(map);
-									map.setZoom(10);
+									map.fitBounds(getBounds(coorArray));
 									break;
 								case 'Polygon':
 								case 'MultiPolygon':
 									if (polygon)
-										polygon.setMap(map);
+										polygon.setMap();
 									polygon = new google.maps.Polygon({
-										paths: coordinateArray,
+										paths: coorArray,
 										strokeColor: '#FF0000',
 										strokeOpacity: '1.0',
 										strokeWeight: 2,
 										fillColor: '#FF0000',
-										fillOpacity: 0.35
+										fillOpacity: 0.35,
+										map: map
 									});
-									polygon.setMap(map);
+									map.fitBounds(getBounds(coorArray));
 									break;
 							}
 							center = new google.maps.LatLng(result.centerLat, result.centerLng);
