@@ -5,41 +5,102 @@
 		<script src="http://maps.google.com/maps/api/js?sensor=false"></script>
 		<script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
 		<script>
-			var map, marker, waypointByID = {};
+			var map, marker, polyline, polygon, resultByID = {};
 			function initialize() {
 				var mapOptions = {
-          			center: new google.maps.LatLng(-34.397, 150.644),
+          			center: new google.maps.LatLng(49.5981299, 6.1308834),
           			zoom: 8,
           			mapTypeId: google.maps.MapTypeId.ROADMAP
         		};
 				map = new google.maps.Map(document.getElementById('map'), mapOptions);
-
 			}
+			
+// TODO: Stop preloading all of this; it's too slow, uses up all the RAM and stupid.
+//		 Lets make it load onClick!
 
-			{% for waypoint in waypoints %}
-			{% if waypoint.place.location.x and waypoint.place.location.y %}
-			waypointByID[{{waypoint.id}}] = { name: "{{ waypoint.name }}",
-				lat: {{ waypoint.place.location.x }},
-				lng: {{ waypoint.place.location.y }}
-			};
-			{% endif %}
+			{% for result in results %}
+			
+				{% if result.place.location.x and result.place.location.y %}
+					resultByID[{{ result.id }}] = { 
+						name: "{{ result.name }}",
+						lat: {{ result.place.location.x }},
+						lng: {{ result.place.location.y }},
+						type: '{{ result.place.location.geom_type }}',
+						centerLat: '{{ result.place.location.centroid.x }}',
+						centerLng: '{{ result.place.location.centroid.y }}'
+					};
+				{% else %}
+				
+				{% if result.place.location.coords %}
+					var lat = new Array();
+					var lng = new Array();
+					{% for polys in result.place.location.coords %}
+						{% for x, y in polys %}
+							lat.push({{x}});
+							lng.push({{y}});
+						{% endfor %}
+					{% endfor %}
+					resultByID[{{ result.id }}] = { 
+						name: "{{ result.name }}",
+						lat: lat,
+						lng: lng,
+						type: '{{ result.place.location.geom_type }}',
+						centerLat: '{{ result.place.location.centroid.x }}',
+						centerLng: '{{ result.place.location.centroid.y }}'
+					};
+				{% endif %}{% endif %}
 			{% endfor %}
 
 			$(document).ready(function() {
-				function activateWaypoints() {
-					// Add waypoint click handler
-					$('.waypoint').each(function() {
+				function resultOnclick() {
+					$('.results').each(function() {
 						$(this).click(function() {
-							var waypoint = waypointByID[this.id];
-							var point = new google.maps.LatLng(waypoint.lat, waypoint.lng);
-							if (marker)
-								marker.setMap();
-							marker = new google.maps.Marker({
-								map : map,
-								position : point
-							});
-							map.panTo(point);
-							map.setZoom(15);
+							var result = resultByID[this.id];
+							var coordinateArray = [];
+							for (i = 0; i < result.lat.length; i++) {
+								coordinateArray[i] = new google.maps.LatLng(result.lat[i], result.lng[i]);
+							}
+							switch (result.type) {
+								case'Point':
+									var coord = new google.maps.LatLng(result.lat, result.lng);
+									if (marker)
+										marker.setMap();
+									marker = new google.maps.Marker({
+										map : map,
+										position : coord
+									});
+									map.setZoom(15);
+									break;
+								case 'LineString': 
+								case 'MultiLineString':
+									if (polyline)
+										polyline.setMap(map);
+									polyline = new google.maps.Polyline({
+										path: coordinateArray,
+										strokeColor: '#FF0000',
+										strokeOpacity: 1.0,
+										strokeWeight: 2
+									});
+									polyline.setMap(map);
+									map.setZoom(10);
+									break;
+								case 'Polygon':
+								case 'MultiPolygon':
+									if (polygon)
+										polygon.setMap(map);
+									polygon = new google.maps.Polygon({
+										paths: coordinateArray,
+										strokeColor: '#FF0000',
+										strokeOpacity: '1.0',
+										strokeWeight: 2,
+										fillColor: '#FF0000',
+										fillOpacity: 0.35
+									});
+									polygon.setMap(map);
+									break;
+							}
+							center = new google.maps.LatLng(result.centerLat, result.centerLng);
+							map.panTo(center);
 						}).hover(function() {
 							this.className = this.className.replace('OFF', 'ON');
 						}, function() {
@@ -48,7 +109,7 @@
 					});
 				}
 
-				activateWaypoints();
+				resultOnclick();
 			});
 
 		</script>
@@ -65,7 +126,7 @@
 				width: 100%;
 				height: 75%
 			}
-			#waypoints {
+			#results {
 				overflow: auto;
 				width: 500px;
 				height: 100px
@@ -88,8 +149,17 @@
 		{% if error %}
 			Bad query!
 		{% endif %}
-		<div id=waypoints>
-			{{content}}
+		
+		<div id=results>
+		{% for result in results %}
+		
+			{% if result.place.location %}
+			<div id={{result.id}} class='results linkOFF'>
+				{{result.place.id}} {{result.name}} ({{result.place.location.geom_type }})
+			</div>
+			{% endif %}
+
+		{% endfor %}		
 		</div>
 	</body>
 </html>

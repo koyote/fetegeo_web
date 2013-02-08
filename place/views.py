@@ -14,6 +14,6 @@ def index(request):
         if not query:
             error = True
         else:
-            waypoints = PlaceName.objects.filter(name__iexact=query)
-            return render_to_response('index.html', {'waypoints': waypoints, 'content': render_to_string('waypoints.html', {'waypoints': waypoints}), })
+            results = PlaceName.objects.filter(name__iexact=query)
+            return render_to_response('index.html', {'results': results})
     return render_to_response('index.html', {'error': error})

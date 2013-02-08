@@ -1,9 +1,0 @@
-{% for waypoint in waypoints %}
-
-{% if waypoint.place.location.x and waypoint.place.location.y %}
-<div id={{waypoint.id}} class='waypoint linkOFF'>
-	{{waypoint.name}} ({{waypoint.place.location.x}}, {{waypoint.place.location.y}})
-</div>
-{% endif %}
-
-{% endfor %}
