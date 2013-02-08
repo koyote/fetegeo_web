@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Fetegeo Webview</title>
+		<script src="http://maps.google.com/maps/api/js?sensor=false"></script>
+		<script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
+		<script>
+			var map, marker, waypointByID = {};
+			function initialize() {
+				var mapOptions = {
+          			center: new google.maps.LatLng(-34.397, 150.644),
+          			zoom: 8,
+          			mapTypeId: google.maps.MapTypeId.ROADMAP
+        		};
+				map = new google.maps.Map(document.getElementById('map'), mapOptions);
+
+			}
+
+			{% for waypoint in waypoints %}
+			{% if waypoint.place.location.x and waypoint.place.location.y %}
+			waypointByID[{{waypoint.id}}] = { name: "{{ waypoint.name }}",
+				lat: {{ waypoint.place.location.x }},
+				lng: {{ waypoint.place.location.y }}
+			};
+			{% endif %}
+			{% endfor %}
+
+			$(document).ready(function() {
+				function activateWaypoints() {
+					// Add waypoint click handler
+					$('.waypoint').each(function() {
+						$(this).click(function() {
+							var waypoint = waypointByID[this.id];
+							var point = new google.maps.LatLng(waypoint.lat, waypoint.lng);
+							if (marker)
+								marker.setMap();
+							marker = new google.maps.Marker({
+								map : map,
+								position : point
+							});
+							map.panTo(point);
+							map.setZoom(15);
+						}).hover(function() {
+							this.className = this.className.replace('OFF', 'ON');
+						}, function() {
+							this.className = this.className.replace('ON', 'OFF');
+						});
+					});
+				}
+
+				activateWaypoints();
+			});
+
+		</script>
+		<style>
+			html { 
+				height: 100%
+			}
+			body {
+				height: 100%;
+				margin: 0;
+				padding: 0
+			}
+			#map {
+				width: 100%;
+				height: 75%
+			}
+			#waypoints {
+				overflow: auto;
+				width: 500px;
+				height: 100px
+			}
+			.linkOFF {
+				color: darkblue
+			}
+			.linkON {
+				color: white;
+				background-color: darkblue
+			}
+		</style>
+	</head>
+	<body onload='initialize()'>
+		<div id=map></div>
+		<form action="" method="get">
+			<input id="searchQuery" type="text" name="query" />
+			<input id="searchButton" type="submit" value='Search' />
+		</form>
+		{% if error %}
+			Bad query!
+		{% endif %}
+		<div id=waypoints>
+			{{content}}
+		</div>
+	</body>
+</html>
