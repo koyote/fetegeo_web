@@ -155,8 +155,13 @@
 			<input id="searchQuery" type="text" name="query" />
 			<input id="searchButton" type="submit" value='Search' />
 		</form>
+		
 		{% if error %}
 			Bad query!
+		{% endif %}
+		
+		{%if no_result %}
+			No Results for {{q}} :(
 		{% endif %}
 		
 		<div id=results>
