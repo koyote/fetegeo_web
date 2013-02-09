@@ -3,6 +3,7 @@ from place.models import PlaceName
 
 def index(request):
     error = False
+    
     if 'query' in request.GET:
         query = request.GET['query']
         

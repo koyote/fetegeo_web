@@ -8,6 +8,9 @@ class Type(models.Model):
     def __unicode__(self):
         return self.name
     
+    def __str__(self):
+        return self.__unicode__()
+    
     class Meta:
         db_table = 'type'
 
@@ -19,6 +22,9 @@ class Country(models.Model):
    
     def __unicode__(self):
         return '{2}'.format(self.iso3166_2, self.iso3166_3, self.name)
+    
+    def __str__(self):
+        return self.__unicode__()
     
     class Meta:
         db_table = 'country'
@@ -33,6 +39,9 @@ class Lang(models.Model):
 
     def __unicode__(self):
         return '{2}'.format(self.iso639_1, self.iso639_2, self.name)
+    
+    def __str__(self):
+        return self.__unicode__()
     
     class Meta:
         db_table = 'lang'
@@ -51,6 +60,9 @@ class Postcode(models.Model):
     
     def __unicode__(self):
         return '{1} {2}'.format(self.osm_id, self.main, self.sup)
+    
+    def __str__(self):
+        return self.__unicode__()
     
     class Meta:
         db_table = 'postcode'
@@ -71,6 +83,9 @@ class Place(models.Model):
     def __unicode__(self):
         return 'osm_Id: {0}'.format(self.osm_id)
     
+    def __str__(self):
+        return self.__unicode__()
+    
     class Meta:
         db_table = 'place'
 
@@ -86,6 +101,25 @@ class PlaceName(models.Model):
     def __unicode__(self):
         return self.name
     
+    def __str__(self):
+        return self.__unicode__()
+    
     class Meta:
         db_table = 'place_name'
 
+# Helper functions
+
+def get_country_name(self, country, langs):
+    result = PlaceName.objects.filter(place__country=country, place__type=get_type('country'), lang__in=langs)
+    if result.count() < 1:
+        return country.name
+    return result[0].name
+
+def get_type(self, type_name):
+    return Type.objects.get(name=type_name)
+
+def get_place_name(self, place, langs):
+    result = place.placename_set.get(lang__in=langs)
+    if result.count() == 0 and place.placename_set is not None:
+        return place.placename_set.all()[0]
+    
