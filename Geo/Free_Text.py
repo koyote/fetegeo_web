@@ -20,7 +20,7 @@
 
 import re, hashlib
 from .import Results, UK, US
-from place.models import PlaceName, Country, Postcode, get_place_name, get_type
+from place.models import PlaceName, Country, Postcode, get_type
 
 
 _RE_IRRELEVANT_CHARS = re.compile("[,\\n\\r\\t;()]")
@@ -29,18 +29,16 @@ _RE_SPLIT = re.compile("[ ,/]")
 
 
 class Free_Text:
-    def name_to_lat_long(self, queryier, langs, find_all, allow_dangling, show_area, qs, host_country):
+    def name_to_lat_long(self, queryier, langs, find_all, allow_dangling, qs, host_country):
         self.queryier = queryier
         self.langs = langs
         self.find_all = find_all
         self.allow_dangling = allow_dangling
-        self.show_area = show_area
         self.qs = _cleanup(qs)
         self.split, self.split_indices = _split(self.qs)
         self.host_country = host_country
-        self.country_type = get_type("country")
         
-        results_cache_key = (tuple(langs), find_all, allow_dangling, show_area, self.qs, host_country)
+        results_cache_key = (tuple(langs), find_all, allow_dangling, self.qs, host_country)
         if queryier.results_cache.has_key(results_cache_key):
             return queryier.results_cache[results_cache_key]
 
@@ -102,7 +100,7 @@ class Free_Text:
             # easier than having this logic every bit of code that adds matches.
             i = 0
             while i < len(results):
-                if results[i].country_id != self.host_country.id:
+                if results[i].place.country != self.host_country:
                     del results[i]
                 else:
                     i += 1
@@ -120,15 +118,15 @@ class Free_Text:
             # will kick into action.
             best_i = None
             for i in range(len(results)):
-                if results[i].country_id == self.host_country.id:
+                if results[i].place.country == self.host_country:
                     if best_i is None:
                         best_i = i
                     elif isinstance(results[best_i], Results.RPlace) and\
                          isinstance(results[i], Results.RPlace):
-                        if not results[best_i].population and results[i].population:
+                        if not results[best_i].place.population and results[i].place.population:
                             best_i = i
-                        elif results[best_i].population and results[i].population:
-                            if results[best_i].population < results[i].population:
+                        elif results[best_i].place.population and results[i].place.population:
+                            if results[best_i].place.population < results[i].place.population:
                                 best_i = i
                     elif isinstance(results[best_i], Results.RPost_Code) and\
                          isinstance(results[i], Results.RPlace):
@@ -151,10 +149,10 @@ class Free_Text:
                     best_i = i
                 elif isinstance(results[best_i], Results.RPlace) and\
                      isinstance(results[i], Results.RPlace):
-                    if not results[best_i].population and results[i].population:
+                    if not results[best_i].place.population and results[i].place.population:
                         best_i = i
-                    elif results[best_i].population and results[i].population:
-                        if results[best_i].population < results[i].population:
+                    elif results[best_i].place.population and results[i].place.population:
+                        if results[best_i].place.population < results[i].place.population:
                             best_i = i
                 elif isinstance(results[best_i], Results.RPost_Code) and\
                      isinstance(results[i], Results.RPlace):
@@ -207,7 +205,7 @@ class Free_Text:
         # Finally try and match a full country name. Note that we're agnostic over the language used to
         # specify the country name.
 
-        country_list = PlaceName.objects.filter(type=self.country_type, name_hash=_hash_wd(self.split[-1]))
+        country_list = PlaceName.objects.filter(type=get_type("country"), name_hash=_hash_wd(self.split[-1]))
 
         done = set()
         for cnd in country_list.all():
@@ -229,8 +227,7 @@ class Free_Text:
 
         for j in range(0, i + 1):
             sub_hash = _hash_list(self.split[j:i + 1])
-            print("Sub_hash " + str(self.split[j:i + 1]) + ": " + sub_hash)
-            cache_key = (country, sub_hash, self.show_area)
+            cache_key = (country, sub_hash)
             if self.queryier.place_cache.has_key(cache_key):
                 place_names = self.queryier.place_cache[cache_key]
             else:
@@ -285,13 +282,11 @@ class Free_Text:
                         continue
                     self._matched_places.add(done_key)
 
-                    local_name = get_place_name(p.place, self.langs)
-
                     pp = self.queryier.pp_place(self, p.place)
 
                     self._longest_match = new_i + 1
 
-                    self._matches[new_i + 1].append(Results.RPlace(p.place, local_name, pp))
+                    self._matches[new_i + 1].append(Results.RPlace(p.place, pp))
 
             if postcode is None:
                 for sub_postcode, k in self._iter_postcode(i, country):

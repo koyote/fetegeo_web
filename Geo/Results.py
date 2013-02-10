@@ -17,6 +17,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
+import json
 
 
 class Result:
@@ -50,67 +51,48 @@ class RCountry:
 
 
 class RPlace:
-    def __init__(self, place, name, pp):
-        self.id = place.id
-        self.osm_id = place.osm_id
-        self.name = name
-        self.location = place.location
-        self.population = place.population
+    def __init__(self, place, pp):
+        self.place = place
         self.pp = pp
-        
-        if place.country:
-            self.country_id = place.country.id
-        else:
-            self.country_id = None
-        if place.parent:
-            self.parent_id = place.parent.id
-        else:
-            self.parent_id = None
 
+
+    def to_json(self):
+        data = {'osm_id':self.place.osm_id, 'population':self.place.population, 'pp':self.pp, 'location':self.place.location}
+        return json.dumps(data)
+        
+        
     def to_xml(self):
-        if self.parent_id is not None:
-            parent_id_txt = "<parent_id>{0}</parent_id>".format(self.parent_id)
-        else:
-            parent_id_txt = ""
 
         if self.population is not None:
-            population_txt = "<population>{0}</population>".format(self.population)
+            population_txt = "<population>{0}</population>".format(self.place.population)
         else:
             population_txt = ""
 
         return ("<place>"
                 "<id>{id}</id>"
                 "<osm_id>{osm_id}</osm_id>"
-                "<name>{name}</name>"
                 "<location>{location}</location>"
-                "<country_id>{country_id}</country_id>"
-                "{parent_id}"
                 "{population}"
                 "<pp>{pp}</pp>"
                 "</place>"
-            ).format(id=self.id, osm_id=self.osm_id, name=self.name, location=self.location, country_id=self.country_id,
-                     parent_id=parent_id_txt, population=population_txt, pp=self.pp)
+            ).format(id=self.place.id, osm_id=self.place.osm_id, location=self.place.location, population=population_txt, pp=self.pp)
 
 
 class RPost_Code:
     def __init__(self, postcode, pp):
-        self.id = postcode.id
-        self.osm_id = postcode.osm_id
-        self.location = postcode.location
+        self.postcode = postcode
         self.pp = pp
-        self.dangling = ""
-        if postcode.country:
-            self.country_id = postcode.country.id
-        else:
-            self.country_id = None
 
+    
+    def to_json(self):
+        data = {'osm_id':self.postcode.osm_id, 'pp':self.pp, 'location':self.postcode.location}
+        return json.dumps(data)
 
     def to_xml(self):
         return ("<postcode>"
                 "<id>{id}</id>"
                 "<osm_id>{osm_id}</osm_id>"
-                "<country_id>{country_id}</country_id>"
                 "<location>{location}</location>"
                 "<pp>{pp}</pp>"
                 "</postcode>"
-            ).format(id=self.id, country_id=self.country_id, location=self.location, pp=self.pp, osm_id=self.osm_id)
+            ).format(id=self.postcode.id, location=self.postcode.location, pp=self.postcode.pp, osm_id=self.postcode.osm_id)
