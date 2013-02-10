@@ -1,4 +1,4 @@
-from django.contrib.gis.db import models 
+from django.contrib.gis.db import models
 
     
 class Type(models.Model):
@@ -30,7 +30,7 @@ class Country(models.Model):
     
     class Meta:
         db_table = 'country'
-        verbose_name_plural='Countries'
+        verbose_name_plural = 'Countries'
 
 
 class Lang(models.Model):
@@ -77,7 +77,7 @@ class Postcode(models.Model):
     location = models.GeometryField(blank=True, null=True)
     main = models.TextField(blank=True, null=True)
     sup = models.TextField(blank=True, null=True)
-    country_id = models.BigIntegerField(blank=True, null=True)
+    country = models.ForeignKey(Country, blank=True, null=True)
     parent = models.ForeignKey(Place, blank=True, null=True)
     
     objects = models.GeoManager()
@@ -112,17 +112,28 @@ class PlaceName(models.Model):
 
 # Helper functions
 
-def get_country_name(self, country, langs):
+def get_country_name(country, langs):
     result = PlaceName.objects.filter(place__country=country, place__type=get_type('country'), lang__in=langs)
     if result.count() < 1:
         return country.name
     return result[0].name
 
-def get_type(self, type_name):
+def get_type(type_name):
     return Type.objects.get(name=type_name)
 
-def get_place_name(self, place, langs):
-    result = place.placename_set.get(lang__in=langs)
-    if result.count() == 0 and place.placename_set is not None:
-        return place.placename_set.all()[0]
+def get_place_name(place, langs):
+
+    if place is None or place.placename_set is None:
+        return []
     
+    result = place.placename_set.filter(lang__in=langs)
+    
+    if result.count() == 0:
+        # Often the default name has no language set
+        # We specify 'name' as a type because sometimes we might have two names of lang null, one being a prefix p.ex
+        result = place.placename_set.filter(lang__isnull=True, type=get_type('name'))
+        
+        if result.count() == 0:
+            result = place.placename_set.all() # Any old language will have to do
+        
+    return result[0].name

@@ -107,6 +107,7 @@ class Free_Text:
                 else:
                     i += 1
 
+        print([p.pp for p in results])
         # Sort the results into alphabetical order.
         results.sort(key=lambda x: x.pp)
 
@@ -231,14 +232,14 @@ class Free_Text:
             print("Sub_hash " + str(self.split[j:i + 1]) + ": " + sub_hash)
             cache_key = (country, sub_hash, self.show_area)
             if self.queryier.place_cache.has_key(cache_key):
-                places = self.queryier.place_cache[cache_key]
+                place_names = self.queryier.place_cache[cache_key]
             else:
                 if country is not None:
                     place_names = PlaceName.objects.filter(name_hash=sub_hash, place__country=country).distinct('place','name')
                 else:
                     place_names = PlaceName.objects.filter(name_hash=sub_hash).distinct('place','name')
      
-                self.queryier.place_cache[cache_key] = places
+                self.queryier.place_cache[cache_key] = place_names
 
             for p in place_names:
                 # Don't get caught out by e.g. a capital city having the same name as a state.

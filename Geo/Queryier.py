@@ -45,7 +45,7 @@ class Queryier:
         self.results_cache = Temp_Cache.Cached_Dict(Temp_Cache.SMALL_CACHE_SIZE)
 
     def pp_place(self, ft, place):
-        cache_key = (tuple(ft.langs), ft.host_country_id, place)
+        cache_key = (tuple(ft.langs), ft.host_country, place)
         if self.place_pp_cache.has_key(cache_key):
             return self.place_pp_cache[cache_key]
         
@@ -57,7 +57,7 @@ class Queryier:
             fmt = _ADMIN_LEVELS[iso2]
         else:
             fmt = _DEFAULT_LEVEL
-            
+
         pp = get_place_name(place, ft.langs)
         parent = place.parent
         
@@ -66,7 +66,7 @@ class Queryier:
             assert(p.parent != parent)
 
             if p.admin_level in fmt:
-                pp = "{0}, {1}".format(pp, get_place_name(p.parent, ft.langs))
+                pp = "{0}, {1}".format(pp, get_place_name(parent, ft.langs))
 
             parent = p.parent
 
