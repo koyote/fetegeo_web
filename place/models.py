@@ -3,6 +3,7 @@ from django.contrib.gis.db import models
     
 class Type(models.Model):
     name = models.TextField()
+    
     objects = models.GeoManager()
    
     def __unicode__(self):
@@ -18,6 +19,7 @@ class Country(models.Model):
     iso3166_2 = models.CharField(blank=True, null=True, max_length=2)
     iso3166_3 = models.CharField(blank=True, null=True, max_length=3)
     name = models.TextField(blank=True)
+    
     objects = models.GeoManager()
    
     def __unicode__(self):
@@ -35,6 +37,7 @@ class Lang(models.Model):
     iso639_1 = models.CharField(blank=True, null=True, max_length=2)
     iso639_2 = models.CharField(blank=True, null=True, max_length=3)
     name = models.TextField(blank=True)
+    
     objects = models.GeoManager()
 
     def __unicode__(self):
@@ -45,6 +48,27 @@ class Lang(models.Model):
     
     class Meta:
         db_table = 'lang'
+
+class Place(models.Model):
+    id = models.BigIntegerField(primary_key=True)
+    osm_id = models.BigIntegerField(blank=True, null=True)
+    type = models.ForeignKey(Type, blank=True, null=True)
+    country = models.ForeignKey(Country, blank=True, null=True)
+    location = models.GeometryField(blank=True, null=True)
+    admin_level = models.IntegerField(blank=True, null=True)
+    population = models.BigIntegerField(blank=True, null=True)
+    parent = models.ForeignKey('self', blank=True, null=True)
+    
+    objects = models.GeoManager()
+          
+    def __unicode__(self):
+        return 'osm_Id: {0}'.format(self.osm_id)
+    
+    def __str__(self):
+        return self.__unicode__()
+    
+    class Meta:
+        db_table = 'place'
         
 class Postcode(models.Model):
     id = models.BigIntegerField(primary_key=True)
@@ -53,9 +77,9 @@ class Postcode(models.Model):
     location = models.GeometryField(blank=True, null=True)
     main = models.TextField(blank=True, null=True)
     sup = models.TextField(blank=True, null=True)
-    #country_id = models.BigIntegerField(blank=True, null=True)
-    #parent_id = models.BigIntegerField(blank=True, null=True)
-    #area = models.FloatField(blank=True, null=True)
+    country_id = models.BigIntegerField(blank=True, null=True)
+    parent = models.ForeignKey(Place, blank=True, null=True)
+    
     objects = models.GeoManager()
     
     def __unicode__(self):
@@ -67,28 +91,6 @@ class Postcode(models.Model):
     class Meta:
         db_table = 'postcode'
 
-class Place(models.Model):
-    id = models.BigIntegerField(primary_key=True)
-    osm_id = models.BigIntegerField(blank=True, null=True)
-    type = models.ForeignKey(Type, blank=True, null=True)
-    postcode = models.ForeignKey(Postcode, blank=True, null=True)
-    country = models.ForeignKey(Country, blank=True, null=True)
-    location = models.GeometryField(blank=True, null=True)
-    admin_level = models.IntegerField(blank=True, null=True)
-    population = models.BigIntegerField(blank=True, null=True)
-    #parent_id = models.ForeignKey('self', blank=True, null=True)
-    #area = models.FloatField(blank=True, null=True)
-    objects = models.GeoManager()
-          
-    def __unicode__(self):
-        return 'osm_Id: {0}'.format(self.osm_id)
-    
-    def __str__(self):
-        return self.__unicode__()
-    
-    class Meta:
-        db_table = 'place'
-
 class PlaceName(models.Model):
     id = models.BigIntegerField(primary_key=True)
     place = models.ForeignKey(Place, blank=True, null=True)
@@ -96,6 +98,7 @@ class PlaceName(models.Model):
     type = models.ForeignKey(Type, blank=True, null=True)
     name = models.TextField(blank=True)
     name_hash = models.CharField(blank=True, max_length=32)
+    
     objects = models.GeoManager()
         
     def __unicode__(self):
