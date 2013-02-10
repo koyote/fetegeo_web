@@ -72,7 +72,7 @@ class Free_Text:
             if i == -1:
                 continue
 
-            for parent_places, postcode, j in self._iter_places(i, country):
+            for _, postcode, j in self._iter_places(i, country):
                 if postcode is not None and j + 1 <= self._longest_match:
                     done_key = (postcode.id, j)
                     if done_key in self._matched_postcodes:
@@ -426,7 +426,7 @@ def _hash_list(sL):
 #
 
 def _match_end_split(split, i, name):
-    split_name, split_indices = _split(name)
+    split_name, _ = _split(name)
     if split_name == split[i - len(split_name) + 1: i + 1]:
         return i - len(split_name)
 

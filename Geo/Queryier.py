@@ -35,8 +35,8 @@ class Queryier:
 
 
     def flush_caches(self):
-        self.country_id_iso2_cache = {} # These are both too small
-        self.country_iso2_id_cache = {} # to bother with a cached dict.
+        self.country_id_iso2_cache = {}  # These are both too small
+        self.country_iso2_id_cache = {}  # to bother with a cached dict.
         self.country_name_cache = {}
         self.place_cache = Temp_Cache.Cached_Dict(Temp_Cache.LARGE_CACHE_SIZE)
         self.place_name_cache = Temp_Cache.Cached_Dict(Temp_Cache.LARGE_CACHE_SIZE)
@@ -44,17 +44,11 @@ class Queryier:
         self.parent_cache = Temp_Cache.Cached_Dict(Temp_Cache.LARGE_CACHE_SIZE)
         self.results_cache = Temp_Cache.Cached_Dict(Temp_Cache.SMALL_CACHE_SIZE)
 
-    #
-    # Convenience methods
-    #
-
-
     def pp_place(self, ft, place):
         cache_key = (tuple(ft.langs), ft.host_country_id, place)
         if self.place_pp_cache.has_key(cache_key):
             return self.place_pp_cache[cache_key]
-
-        pp = get_place_name(place, ft.langs)
+        
         iso2 = ''
         if place.country:
             iso2 = place.country.iso3166_2
@@ -63,7 +57,10 @@ class Queryier:
             fmt = _ADMIN_LEVELS[iso2]
         else:
             fmt = _DEFAULT_LEVEL
+            
+        pp = get_place_name(place, ft.langs)
         parent = place.parent
+        
         while parent is not None:
             p = Place.objects.get(id=parent.id)
             assert(p.parent != parent)

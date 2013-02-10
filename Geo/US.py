@@ -21,7 +21,7 @@
 
 import re
 from .import Results
-from place.models import Postcode, Country, get_country_name
+from place.models import Postcode, Country
 
 _RE_US_ZIP = re.compile("^[0-9]{5}$")
 _RE_US_ZIP_PLUS4 = re.compile("^[0-9]{5}-[0-9]{4}$")
