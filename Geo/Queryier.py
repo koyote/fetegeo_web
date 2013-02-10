@@ -49,7 +49,7 @@ class Queryier:
     #
 
 
-    def pp_place_id(self, ft, place):
+    def pp_place(self, ft, place):
         cache_key = (tuple(ft.langs), ft.host_country_id, place)
         if self.place_pp_cache.has_key(cache_key):
             return self.place_pp_cache[cache_key]

@@ -286,12 +286,11 @@ class Free_Text:
 
                     local_name = get_place_name(p.place, self.langs)
 
-                    pp = self.queryier.pp_place_id(self, p.place)
+                    pp = self.queryier.pp_place(self, p.place)
 
                     self._longest_match = new_i + 1
-                    # TODO: country.id may raise error if country does not exist. We need to fix Results to only take in complete objects
-                    self._matches[new_i + 1].append(Results.RPlace(p.place.id, p.place.osm_id, local_name, p.place.location,
-                                                                   p.place.country.id, p.place.parent.id, p.place.population, pp))
+
+                    self._matches[new_i + 1].append(Results.RPlace(p.place, local_name, pp))
 
             if postcode is None:
                 for sub_postcode, k in self._iter_postcode(i, country):
@@ -365,9 +364,9 @@ class Free_Text:
             parent = cnd.parent
 
             if parent:
-                pp = "{0}, {1}".format(cnd.main, self.queryier.pp_place_id(self, parent))
+                pp = "{0}, {1}".format(cnd.main, self.queryier.pp_place(self, parent))
 
-            match = Results.RPost_Code(cnd.id, cnd.osm_id, cnd.country.id, cnd.location, pp)
+            match = Results.RPost_Code(cnd, pp)
             yield match, i - 1
 
         if country in uk:

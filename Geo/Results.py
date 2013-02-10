@@ -34,9 +34,9 @@ class Result:
 
 
 class RCountry:
-    def __init__(self, id, name, pp):
-        self.id = id
-        self.name = name
+    def __init__(self, country, pp):
+        self.id = country.id
+        self.name = country.name
         self.pp = pp
 
 
@@ -50,15 +50,22 @@ class RCountry:
 
 
 class RPlace:
-    def __init__(self, id, osm_id, name, location, country_id, parent_id, population, pp):
-        self.id = id
-        self.osm_id = osm_id
+    def __init__(self, place, name, pp):
+        self.id = place.id
+        self.osm_id = place.osm_id
         self.name = name
-        self.location = location
-        self.country_id = country_id
-        self.parent_id = parent_id
-        self.population = population
+        self.location = place.location
+        self.population = place.population
         self.pp = pp
+        
+        if place.country:
+            self.country_id = place.country.id
+        else:
+            self.country_id = None
+        if place.parent:
+            self.parent_id = place.parent.id
+        else:
+            self.parent_id = None
 
     def to_xml(self):
         if self.parent_id is not None:
@@ -86,13 +93,16 @@ class RPlace:
 
 
 class RPost_Code:
-    def __init__(self, id, osm_id, country_id, location, pp):
-        self.id = id
-        self.osm_id = osm_id
-        self.country_id = country_id
-        self.location = location
+    def __init__(self, postcode, pp):
+        self.id = postcode.id
+        self.osm_id = postcode.osm_id
+        self.location = postcode.location
         self.pp = pp
         self.dangling = ""
+        if postcode.country:
+            self.country_id = postcode.country.id
+        else:
+            self.country_id = None
 
 
     def to_xml(self):
