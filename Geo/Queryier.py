@@ -34,7 +34,7 @@ class Queryier:
         self.flush_caches()
         
     def search(self, langs, find_all, allow_dangling, qs, host_country):
-        return Free_Text.Free_Text().name_to_lat_long(self, langs, find_all, allow_dangling, qs, host_country)
+        return Free_Text.Free_Text().search(self, langs, find_all, allow_dangling, qs, host_country)
 
 
     def flush_caches(self):
