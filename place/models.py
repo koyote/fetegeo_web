@@ -1,6 +1,5 @@
 from django.contrib.gis.db import models
-
-    
+  
 class Type(models.Model):
     name = models.TextField()
     
@@ -134,6 +133,6 @@ def get_place_name(place, langs):
         result = place.placename_set.filter(lang__isnull=True, type=get_type('name'))
         
         if result.count() == 0:
-            result = place.placename_set.all() # Any old language will have to do
+            result = place.placename_set.all()  # Any old language will have to do
         
     return result[0].name

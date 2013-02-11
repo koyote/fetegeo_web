@@ -18,9 +18,10 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-import re, hashlib
-from .import Results, UK, US
 from place.models import PlaceName, Country, Postcode, Lang, get_type
+import hashlib
+import re
+from .import Results, UK, US
 
 
 _RE_IRRELEVANT_CHARS = re.compile("[,\\n\\r\\t;()]")
@@ -28,7 +29,9 @@ _RE_SQUASH_SPACES = re.compile(" +")
 _RE_SPLIT = re.compile("[ ,/]")
 
 
-class Free_Text:
+class FreeText:
+    
+    
     def search(self, queryier, langs, find_all, allow_dangling, qs, host_country):
         self.queryier = queryier
         self.langs = [Lang.objects.get(id=lang) for lang in langs]
@@ -56,7 +59,7 @@ class Free_Text:
         # when we might conceivably match the same place twice but with different bits of "loose"
         # text to the left of the match.
         self._matched_places = set()
-        self._matched_postcodes = set() # Analogous to _matched_places.
+        self._matched_postcodes = set()  # Analogous to _matched_places.
 
         # The basic idea of the search is to start from the right hand side of the string and try and
         # match first the country, then any postcodes and places. Note that postcodes and places can
@@ -120,18 +123,15 @@ class Free_Text:
                 if results[i].place.country == self.host_country:
                     if best_i is None:
                         best_i = i
-                    elif isinstance(results[best_i], Results.RPlace) and\
-                         isinstance(results[i], Results.RPlace):
+                    elif isinstance(results[best_i], Results.RPlace) and isinstance(results[i], Results.RPlace):
                         if not results[best_i].place.population and results[i].place.population:
                             best_i = i
                         elif results[best_i].place.population and results[i].place.population:
                             if results[best_i].place.population < results[i].place.population:
                                 best_i = i
-                    elif isinstance(results[best_i], Results.RPost_Code) and\
-                         isinstance(results[i], Results.RPlace):
+                    elif isinstance(results[best_i], Results.RPost_Code) and isinstance(results[i], Results.RPlace):
                         best_i = i
-                    elif isinstance(results[best_i], Results.RPost_Code) and\
-                         isinstance(results[i], Results.RPost_Code):
+                    elif isinstance(results[best_i], Results.RPost_Code) and isinstance(results[i], Results.RPost_Code):
                         pass
 
             if best_i is not None:
@@ -146,18 +146,15 @@ class Free_Text:
             for i in range(len(results)):
                 if best_i is None:
                     best_i = i
-                elif isinstance(results[best_i], Results.RPlace) and\
-                     isinstance(results[i], Results.RPlace):
+                elif isinstance(results[best_i], Results.RPlace) and isinstance(results[i], Results.RPlace):
                     if not results[best_i].place.population and results[i].place.population:
                         best_i = i
                     elif results[best_i].place.population and results[i].place.population:
                         if results[best_i].place.population < results[i].place.population:
                             best_i = i
-                elif isinstance(results[best_i], Results.RPost_Code) and\
-                     isinstance(results[i], Results.RPlace):
+                elif isinstance(results[best_i], Results.RPost_Code) and isinstance(results[i], Results.RPlace):
                     best_i = i
-                elif isinstance(results[best_i], Results.RPost_Code) and\
-                     isinstance(results[i], Results.RPost_Code):
+                elif isinstance(results[best_i], Results.RPost_Code) and isinstance(results[i], Results.RPost_Code):
                     pass
 
             if best_i is not None:
@@ -231,9 +228,9 @@ class Free_Text:
                 place_names = self.queryier.place_cache[cache_key]
             else:
                 if country is not None:
-                    place_names = PlaceName.objects.filter(name_hash=sub_hash, place__country=country).distinct('place','name')
+                    place_names = PlaceName.objects.filter(name_hash=sub_hash, place__country=country).distinct('place', 'name')
                 else:
-                    place_names = PlaceName.objects.filter(name_hash=sub_hash).distinct('place','name')
+                    place_names = PlaceName.objects.filter(name_hash=sub_hash).distinct('place', 'name')
      
                 self.queryier.place_cache[cache_key] = place_names
 
@@ -332,7 +329,7 @@ class Free_Text:
 
 
     def _iter_postcode(self, i, country):  
-        uk = [Country.objects.get(iso3166_2=code) for code in UK._UK_CODES]
+        uk = UK.COUNTRIES
         us = [Country.objects.get(iso3166_2="US")]
 
         if country in uk:
@@ -351,7 +348,7 @@ class Free_Text:
 
         for cnd in p.all():
 
-            if cnd.country in uk or cnd.country == us:
+            if cnd.country in uk + us:
                 # We search for UK/US postcodes elsewhere.
                 continue
 

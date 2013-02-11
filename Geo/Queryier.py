@@ -19,7 +19,7 @@
 # IN THE SOFTWARE.
 
 
-from .import Temp_Cache, Free_Text
+from .import Temp_Cache, FreeText
 from place.models import get_place_name, Place
 
 # Here we set a custom set of parents to be added to the pretty print.
@@ -34,7 +34,7 @@ class Queryier:
         self.flush_caches()
         
     def search(self, langs, find_all, allow_dangling, qs, host_country):
-        return Free_Text.Free_Text().search(self, langs, find_all, allow_dangling, qs, host_country)
+        return FreeText.FreeText().search(self, langs, find_all, allow_dangling, qs, host_country)
 
 
     def flush_caches(self):
@@ -68,7 +68,7 @@ class Queryier:
             p = Place.objects.get(id=parent.id)
             assert(p.parent != parent)
 
-            #if p.admin_level in fmt:
+            # if p.admin_level in fmt:
             pp = "{0}, {1}".format(pp, get_place_name(parent, ft.langs))
 
             parent = p.parent

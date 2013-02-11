@@ -19,9 +19,9 @@
 # IN THE SOFTWARE.
 
 
+from place.models import Postcode, Country
 import re
 from .import Results
-from place.models import Postcode, Country
 
 _RE_US_ZIP = re.compile("^[0-9]{5}$")
 _RE_US_ZIP_PLUS4 = re.compile("^[0-9]{5}-[0-9]{4}$")
@@ -47,13 +47,13 @@ def _sub_pc_match(ft, i):
         p = Postcode.objects.filter(main__iexact=main, country=us)
 
     for cnd in p.all():
-        pp = pp_place(ft, cnd.main, cnd.id)
+        pp = _pp_place(ft, cnd.main, cnd.id)
 
         match = Results.RPost_Code(cnd.id, cnd.osm_id, cnd.country.id, cnd.location, pp)
         yield match, i - 1
 
 
-def pp_place(ft, pp, postcode_id):
+def _pp_place(ft, pp, postcode_id):
 
     p = Postcode.objects.get(id=postcode_id)
 

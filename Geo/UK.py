@@ -19,9 +19,9 @@
 # IN THE SOFTWARE.
 
 
+from place.models import Postcode, Country
 import re
 from .import Results
-from place.models import Postcode, Country
 
 
 _RE_UK_PARTIAL_POSTCODE = re.compile(
@@ -34,11 +34,11 @@ _RE_UK_FULL_POSTCODE = re.compile(
 
 # Not all UK postcodes belong to GB (Isle of Man for example)
 _UK_CODES = ["GB", "IM", "GY", "JE", "AI", "IO", "FK", "GI", "PN", "GS", "SH", "TC"]
-
+COUNTRIES = [Country.objects.get(iso3166_2=code) for code in _UK_CODES]
 
 def postcode_match(ft, i):
     assert i > -1
-    countries = [Country.objects.get(iso3166_2=code) for code in _UK_CODES]
+    countries = COUNTRIES
 
     m = _RE_UK_PARTIAL_POSTCODE.match(ft.split[i])
     if m is not None:
@@ -56,7 +56,7 @@ def postcode_match(ft, i):
         if p.count() > 0:
             # We might have got multiple matches, in which case we arbitrarily pick the first one.
             fst = p[0]
-            pp = pp_place(ft, fst.main, fst.id)
+            pp = _pp_place(ft, fst.main, fst.id)
             match = Results.RPost_Code(fst.id, fst.osm_id, fst.country.id, fst.location, pp)
             yield match, i - 1
 
@@ -84,7 +84,7 @@ def postcode_match(ft, i):
 
     if p.count() > 0:
         fst = p[0]
-        pp = pp_place(ft, "{0} {1}".format(fst.main, fst.sup), fst.id)
+        pp = _pp_place(ft, "{0} {1}".format(fst.main, fst.sup), fst.id)
         match = Results.RPost_Code(fst.id, fst.osm_id, fst.country.id, fst.location, pp)
         yield match, i - 2
         return
@@ -96,7 +96,7 @@ def postcode_match(ft, i):
 
     if p.count() > 0:
         fst = p[0]
-        pp = pp_place(ft, "{0} {1}".format(fst.main, fst.sup[0]), fst.id)  # # TODO: is the sup[0] correct?
+        pp = _pp_place(ft, "{0} {1}".format(fst.main, fst.sup[0]), fst.id)  # # TODO: is the sup[0] correct?
         match = Results.RPost_Code(fst.id, fst.osm_id, fst.country.id, fst.location, pp)
         yield match, i - 2
         return
@@ -108,12 +108,11 @@ def postcode_match(ft, i):
 
     if p.count() > 0:
         fst = p[0]
-        pp = pp_place(ft, fst.main, fst.id)
+        pp = _pp_place(ft, fst.main, fst.id)
         match = Results.RPost_Code(fst.id, fst.osm_id, fst.country.id, fst.location, pp)
         yield match, i - 2
 
-
-def pp_place(ft, pp, postcode_id):
+def _pp_place(ft, pp, postcode_id):
 
     p = Postcode.objects.get(id=postcode_id)
 

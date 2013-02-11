@@ -1,12 +1,17 @@
-from django.shortcuts import render_to_response
-from django.core.context_processors import csrf
-from django import forms
 from Geo import Queryier
+from django import forms
+from django.core.context_processors import csrf
+from django.shortcuts import render_to_response
 from place.models import Lang
 
 _DEFAULT_LANG = Lang.objects.get(iso639_1='EN').id
 q = Queryier.Queryier()
 
+
+class IndexForm(forms.Form):
+    langs = forms.ChoiceField(choices=[('', "Choose Language")] + [(x.id, x.name) for x in Lang.objects.all()], required=False)
+    query = forms.CharField()
+    
 def index(request):
     error = False
     
@@ -21,22 +26,17 @@ def index(request):
                 error = True
             else:
                 q_res = q.search([lang], False, False, query, None)
-                results = [ r.ri.place for r in q_res ]
+                results = [r.ri.place for r in q_res]
                 names = {r.ri.place.id: r.ri.pp for r in q_res}
                 if not results:
-                    return rtr(request, 'index.html', {'no_result': True, 'q': query, 'form':form})
+                    return rtr(request, 'index.html', {'no_result': True, 'q': query, 'form': form})
                 else:
-                    return rtr(request, 'index.html', {'results': results, 'names': names, 'form':form})
+                    return rtr(request, 'index.html', {'results': results, 'names': names, 'form': form})
     else:
         form = IndexForm()
         
-    return rtr(request, 'index.html', {'error': error, 'form':form})
+    return rtr(request, 'index.html', {'error': error, 'form': form})
 
-class IndexForm(forms.Form):
-    langs = forms.ChoiceField(choices=[('', "Choose Language")] +[(x.id, x.name) for x in Lang.objects.all()], required=False)
-    query = forms.CharField()
-    
 def rtr(request, html, c):
     c.update(csrf(request))
     return render_to_response(html, c)
-    
