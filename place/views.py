@@ -1,24 +1,21 @@
 from django.shortcuts import render_to_response
-from Geo import Queryier, Free_Text
-from place.models import PlaceName
+from Geo import Queryier
 
 _DEFAULT_LANGS = ['EN']
+q = Queryier.Queryier()
 
 def index(request):
     error = False
       
     if 'query' in request.GET:
-        query = request.GET['query']
-        
-        q = Queryier.Queryier()
-        ft = Free_Text.Free_Text()
+        query = request.GET['query'] 
         
         if not query:
             error = True
         else:
-            ft_res = ft.name_to_lat_long(q, _DEFAULT_LANGS, False, False, query, None)
-            results = [ r.ri.place for r in ft_res ]
-            names = {r.ri.place.id: r.ri.pp for r in ft_res}
+            q_res = q.search(_DEFAULT_LANGS, False, False, query, None)
+            results = [ r.ri.place for r in q_res ]
+            names = {r.ri.place.id: r.ri.pp for r in q_res}
             if not results:
                 return render_to_response('index.html', {'no_result': True, 'q': query})
             else:

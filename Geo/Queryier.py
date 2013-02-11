@@ -19,7 +19,7 @@
 # IN THE SOFTWARE.
 
 
-from .import Temp_Cache
+from .import Temp_Cache, Free_Text
 from place.models import get_place_name, Place
 
 # Here we set a custom set of parents to be added to the pretty print.
@@ -32,6 +32,9 @@ _DEFAULT_LEVEL = (2, 4, 6, 8)
 class Queryier:
     def __init__(self):
         self.flush_caches()
+        
+    def search(self, langs, find_all, allow_dangling, qs, host_country):
+        return Free_Text.Free_Text().name_to_lat_long(self, langs, find_all, allow_dangling, qs, host_country)
 
 
     def flush_caches(self):

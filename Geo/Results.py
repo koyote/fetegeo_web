@@ -81,6 +81,7 @@ class RPlace:
 class RPost_Code:
     def __init__(self, postcode, pp):
         self.postcode = postcode
+        self.place = postcode
         self.pp = pp
 
     

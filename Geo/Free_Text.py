@@ -29,7 +29,7 @@ _RE_SPLIT = re.compile("[ ,/]")
 
 
 class Free_Text:
-    def name_to_lat_long(self, queryier, langs, find_all, allow_dangling, qs, host_country):
+    def search(self, queryier, langs, find_all, allow_dangling, qs, host_country):
         self.queryier = queryier
         self.langs = [Lang.objects.get(iso639_1=lang) for lang in langs]
         self.find_all = find_all
