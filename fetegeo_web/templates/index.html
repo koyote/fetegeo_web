@@ -149,8 +149,9 @@
 	</head>
 	<body onload='initialize()'>
 		<div id=map></div>
-		<form action="" method="get">
-			<input id="searchQuery" type="text" name="query" />
+		<form action="" method="post">
+			{% csrf_token %}
+			{{ form }}
 			<input id="searchButton" type="submit" value='Search' />
 		</form>
 		

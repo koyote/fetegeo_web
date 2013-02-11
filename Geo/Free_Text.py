@@ -31,7 +31,7 @@ _RE_SPLIT = re.compile("[ ,/]")
 class Free_Text:
     def search(self, queryier, langs, find_all, allow_dangling, qs, host_country):
         self.queryier = queryier
-        self.langs = [Lang.objects.get(iso639_1=lang) for lang in langs]
+        self.langs = [Lang.objects.get(id=lang) for lang in langs]
         self.find_all = find_all
         self.allow_dangling = allow_dangling
         self.qs = _cleanup(qs)
@@ -56,7 +56,7 @@ class Free_Text:
         # when we might conceivably match the same place twice but with different bits of "loose"
         # text to the left of the match.
         self._matched_places = set()
-        self._matched_postcodes = set() # Analagous to _matched_places.
+        self._matched_postcodes = set() # Analogous to _matched_places.
 
         # The basic idea of the search is to start from the right hand side of the string and try and
         # match first the country, then any postcodes and places. Note that postcodes and places can

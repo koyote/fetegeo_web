@@ -68,8 +68,8 @@ class Queryier:
             p = Place.objects.get(id=parent.id)
             assert(p.parent != parent)
 
-            if p.admin_level in fmt:
-                pp = "{0}, {1}".format(pp, get_place_name(parent, ft.langs))
+            #if p.admin_level in fmt:
+            pp = "{0}, {1}".format(pp, get_place_name(parent, ft.langs))
 
             parent = p.parent
 
