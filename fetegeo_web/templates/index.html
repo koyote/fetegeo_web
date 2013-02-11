@@ -28,33 +28,31 @@
 
 			{% for result in results %}
 			
-				{% if result.place.location.x and result.place.location.y %}
+				{% if result.location.x and result.location.y %}
 					resultByID[{{ result.id }}] = { 
-						name: "{{ result.name }}",
-						lat: {{ result.place.location.x }},
-						lng: {{ result.place.location.y }},
-						type: '{{ result.place.location.geom_type }}',
-						centerLat: '{{ result.place.location.centroid.x }}',
-						centerLng: '{{ result.place.location.centroid.y }}'
+						lat: {{ result.location.x }},
+						lng: {{ result.location.y }},
+						type: '{{ result.location.geom_type }}',
+						centerLat: '{{ result.location.centroid.x }}',
+						centerLng: '{{ result.location.centroid.y }}'
 					};
 				{% else %}
 				
-				{% if result.place.location.coords %}
+				{% if result.location.coords %}
 					var lat = new Array();
 					var lng = new Array();
-					{% for polys in result.place.location.coords %}
+					{% for polys in result.location.coords %}
 						{% for x, y in polys %}
 							lat.push({{x}});
 							lng.push({{y}});
 						{% endfor %}
 					{% endfor %}
 					resultByID[{{ result.id }}] = { 
-						name: "{{ result.name }}",
 						lat: lat,
 						lng: lng,
-						type: '{{ result.place.location.geom_type }}',
-						centerLat: '{{ result.place.location.centroid.x }}',
-						centerLng: '{{ result.place.location.centroid.y }}'
+						type: '{{ result.location.geom_type }}',
+						centerLat: '{{ result.location.centroid.x }}',
+						centerLng: '{{ result.location.centroid.y }}'
 					};
 				{% endif %}{% endif %}
 			{% endfor %}
@@ -165,14 +163,10 @@
 		{% endif %}
 		
 		<div id=results>
-		{% for result in results %}
-		
-			{% if result.place.location %}
-			<div id={{result.id}} class='results linkOFF'>
-				{{result.place.id}} {{result.name}} ({{result.place.location.geom_type }})
+		{% for id, name in names.items %}	
+			<div id={{id}} class='results linkOFF'>
+				{{name}}
 			</div>
-			{% endif %}
-
 		{% endfor %}		
 		</div>
 	</body>

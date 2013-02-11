@@ -20,7 +20,7 @@
 
 import re, hashlib
 from .import Results, UK, US
-from place.models import PlaceName, Country, Postcode, get_type
+from place.models import PlaceName, Country, Postcode, Lang, get_type
 
 
 _RE_IRRELEVANT_CHARS = re.compile("[,\\n\\r\\t;()]")
@@ -31,7 +31,7 @@ _RE_SPLIT = re.compile("[ ,/]")
 class Free_Text:
     def name_to_lat_long(self, queryier, langs, find_all, allow_dangling, qs, host_country):
         self.queryier = queryier
-        self.langs = langs
+        self.langs = [Lang.objects.get(iso639_1=lang) for lang in langs]
         self.find_all = find_all
         self.allow_dangling = allow_dangling
         self.qs = _cleanup(qs)
@@ -105,7 +105,6 @@ class Free_Text:
                 else:
                     i += 1
 
-        print([p.pp for p in results])
         # Sort the results into alphabetical order.
         results.sort(key=lambda x: x.pp)
 
