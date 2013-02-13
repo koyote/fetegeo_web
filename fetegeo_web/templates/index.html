@@ -26,7 +26,7 @@
 // TODO: Stop preloading all of this; it's too slow, uses up all the RAM and stupid.
 //		 Lets make it load onClick!
 
-			{% for result in results %}
+			{% for result in places %}	
 			
 				{% if result.location.x and result.location.y %}
 					resultByID[{{ result.id }}] = { 

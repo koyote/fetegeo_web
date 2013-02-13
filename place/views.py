@@ -26,12 +26,11 @@ def index(request):
                 error = True
             else:
                 q_res = q.search([lang], False, False, query, None)
-                results = [r.ri.place for r in q_res]
-                names = {r.ri.place.id: r.ri.pp for r in q_res}
-                if not results:
+                names, places = merge_results(q_res)
+                if not places:
                     return rtr(request, 'index.html', {'no_result': True, 'q': query, 'form': form})
                 else:
-                    return rtr(request, 'index.html', {'results': results, 'names': names, 'form': form})
+                    return rtr(request, 'index.html', {'places': places, 'names': names, 'form': form})
     else:
         form = IndexForm()
         
@@ -40,3 +39,28 @@ def index(request):
 def rtr(request, html, c):
     c.update(csrf(request))
     return render_to_response(html, c)
+
+def merge_results(q_res):
+    names = dict()
+    places = []
+    ls = dict()
+    for r in q_res:
+        place = r.ri.place
+        if place.location is None:
+            continue;
+        if place.location.geom_type in ['LineString', 'MultiLineString']:
+            for id, p in ls.items():
+                if place.location.distance(p.location) < 0.01:
+                    ls[id].location = p.location.union(place.location).merged
+                    break;
+            else:
+                ls[place.id] = place
+                names[place.id] = r.ri.pp
+
+        else:
+            if r.ri.pp not in names.values():
+                places.append(place)
+                names[place.id] = r.ri.pp
+    places.extend(place for place in ls.values())
+            
+    return names, places
