@@ -9,7 +9,7 @@ q = Queryier.Queryier()
 
 
 class IndexForm(forms.Form):
-    langs = forms.ChoiceField(choices=[('', "Choose Language")] + [(x.id, x.name) for x in Lang.objects.all()], required=False)
+    langs = forms.ChoiceField(choices=[('', "Choose Language")] + [(x.id, x.name) for x in Lang.objects.all().order_by('name')], required=False)
     query = forms.CharField()
     
 def index(request):
@@ -27,7 +27,7 @@ def index(request):
             else:
                 q_res = q.search([lang], False, False, query, None)
                 names, places = merge_results(q_res)
-                if not places:
+                if not names:
                     return rtr(request, 'index.html', {'no_result': True, 'q': query, 'form': form})
                 else:
                     return rtr(request, 'index.html', {'places': places, 'names': names, 'form': form})
@@ -42,16 +42,16 @@ def rtr(request, html, c):
 
 def merge_results(q_res):
     names = dict()
-    places = []
+    places = list()
     ls = dict()
     for r in q_res:
         place = r.ri.place
         if place.location is None:
             continue;
         if place.location.geom_type in ['LineString', 'MultiLineString']:
-            for id, p in ls.items():
+            for i, p in ls.items():
                 if place.location.distance(p.location) < 0.01:
-                    ls[id].location = p.location.union(place.location).merged
+                    ls[i].location = p.location.union(place.location).merged
                     break;
             else:
                 ls[place.id] = place
