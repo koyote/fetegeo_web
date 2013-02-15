@@ -19,9 +19,9 @@
 # IN THE SOFTWARE.
 
 
+from Geo import Results
 from place.models import Postcode, Country
 import re
-from .import Results
 
 
 _RE_UK_PARTIAL_POSTCODE = re.compile(

@@ -19,9 +19,9 @@
 # IN THE SOFTWARE.
 
 
+from Geo import Results
 from place.models import Postcode, Country
 import re
-from .import Results
 
 _RE_US_ZIP = re.compile("^[0-9]{5}$")
 _RE_US_ZIP_PLUS4 = re.compile("^[0-9]{5}-[0-9]{4}$")

@@ -21,13 +21,14 @@
 from place.models import PlaceName, Country, Postcode, Lang, get_type
 import hashlib
 import re
-from .import Results, UK, US
+from Geo import Results
+from Geo.Postcodes import UK, US
 
 
 _RE_IRRELEVANT_CHARS = re.compile("[,\\n\\r\\t;()]")
 _RE_SQUASH_SPACES = re.compile(" +")
 _RE_SPLIT = re.compile("[ ,/]")
-
+_RE_EU_ZIP = re.compile('^[A-Za-z]{1,3}-[0-9]{3,10}$')
 
 class FreeText:
     
@@ -331,20 +332,25 @@ class FreeText:
     def _iter_postcode(self, i, country):  
         uk = UK.COUNTRIES
         us = [Country.objects.get(iso3166_2="US")]
+        pc_candidate = self.split[i]
 
-        if country in uk:
+        if country in uk + [None]:
             for sub_postcode, j in UK.postcode_match(self, i):
                 yield sub_postcode, j
 
-        if country in us:
+        if country in us + [None]:
             for sub_postcode, j in US.postcode_match(self, i):
                 yield sub_postcode, j
+         
+        # In Europe, postcodes are sometimes written as C-NNNN Where C is a country car code and N are digits
+        if _RE_EU_ZIP.match(pc_candidate):
+            pc_candidate = pc_candidate.split('-')[1]
 
 
         if country is not None:
-            p = Postcode.objects.filter(main__iexact=self.split[i], country=country)
+            p = Postcode.objects.filter(main__iexact=pc_candidate, country=country)
         else:
-            p = Postcode.objects.filter(main__iexact=self.split[i])
+            p = Postcode.objects.filter(main__iexact=pc_candidate)
 
         for cnd in p.all():
 
@@ -362,11 +368,11 @@ class FreeText:
             match = Results.RPost_Code(cnd, pp)
             yield match, i - 1
 
-        if country in uk:
+        if country not in uk + [None]:
             for sub_postcode, j in UK.postcode_match(self, i):
                 yield sub_postcode, j
 
-        if country in us:
+        if country not in us + [None]:
             for sub_postcode, j in US.postcode_match(self, i):
                 yield sub_postcode, j
 

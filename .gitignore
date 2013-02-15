@@ -2,5 +2,5 @@
 *.pyc
 *.pyo
 .*
-import/*
+import/*.txt
 !/.gitignore
