@@ -20,15 +20,15 @@ class Timer:
 
     def __exit__(self, *args):
         interval = time.time() - self.start
-        if interval < 120:
+        if interval < 60:
             print("Time: {:.2f} seconds.".format(interval))
-        elif interval < 7200:
+        elif interval < 3600:
             m, s = divmod(interval, 60)
-            print("Time: {0:.0f} minutes, {1:.0f} seconds.".format(m, s))
+            print("Time: {:.0f} minutes, {:.0f} seconds.".format(m, s))
         else:
             m, s = divmod(interval, 60)
             h, m = divmod(m, 60)
-            print("Time: {0:.0f} hours, {1:.0f} minutes and {0:.0f} seconds.".format(h, m, s))
+            print("Time: {:.0f} hours, {:.0f} minutes and {:.0f} seconds.".format(h, m, s))
 
 def _import_data(cursor):
     for table in _TABLES:
@@ -53,6 +53,7 @@ def _execute_postgis(cursor):
                 print("Executing: " + comment.strip()) 
                 with Timer():
                     cursor.execute(query)
+                    connection.commit()
                 query = comment = ''
 
 def _vacuum_analyze(cursor):
@@ -60,6 +61,7 @@ def _vacuum_analyze(cursor):
     connection.connection.set_isolation_level(0)
     print('Executing: VACUUM ANALYZE')
     cursor.execute('VACUUM ANALYZE')
+    connection.commit()
     connection.connection.set_isolation_level(old_iso_level)
     
 if __name__ == "__main__":

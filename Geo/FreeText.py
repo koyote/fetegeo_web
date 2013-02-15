@@ -354,7 +354,8 @@ class FreeText:
 
             # Search for a parent place
             parent = cnd.parent
-
+            pp = ''
+            
             if parent:
                 pp = "{0}, {1}".format(cnd.main, self.queryier.pp_place(self, parent))
 
