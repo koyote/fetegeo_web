@@ -1,16 +1,11 @@
 from Geo import Queryier
-from django import forms
 from django.core.context_processors import csrf
 from django.shortcuts import render_to_response
+from place.forms import IndexForm
 from place.models import Lang
 
 _DEFAULT_LANG = Lang.objects.get(iso639_1='EN').id
 q = Queryier.Queryier()
-
-
-class IndexForm(forms.Form):
-    langs = forms.ChoiceField(choices=[('', "Choose Language")] + [(x.id, x.name) for x in Lang.objects.all().order_by('name')], required=False)
-    query = forms.CharField()
     
 def index(request):
     error = False
@@ -37,10 +32,18 @@ def index(request):
     return rtr(request, 'index.html', {'error': error, 'form': form})
 
 def rtr(request, html, c):
+    """
+    Wrapper for render_to_response including the CSRF tag.
+    """
     c.update(csrf(request))
     return render_to_response(html, c)
 
 def merge_results(q_res):
+    """
+    Method takes in a list of results produced by the fetegeo search command.
+    It will skip any results with exactly the same pretty-print name (as they are assumed to be identical)
+    It will also try and merge and LineStrings that are close enough to other LineStrings to be considered part of the same street.
+    """
     names = dict()
     places = list()
     ls = dict()
@@ -48,9 +51,9 @@ def merge_results(q_res):
         place = r.ri.place
         if place.location is None:
             continue;
-        if place.location.geom_type in ['LineString', 'MultiLineString']:
+        if place.location.geom_type == 'LineString':
             for i, p in ls.items():
-                if place.location.distance(p.location) < 0.01:
+                if place.location.distance(p.location) < 0.01:  # TODO: is this number good?
                     ls[i].location = p.location.union(place.location).merged
                     break;
             else:
