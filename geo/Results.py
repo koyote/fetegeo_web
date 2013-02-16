@@ -17,8 +17,6 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
-import json
-
 
 class Result:
     def __init__(self, ri, dangling):
@@ -49,18 +47,18 @@ class RCountry:
                 "</country>"
             ).format(id=self.id, name=self.name, pp=self.pp)
 
-
+# TODO: Make all this one class and have a boolean field to say postcode
 class RPlace:
     def __init__(self, place, pp):
         self.place = place
         self.pp = pp
-
-
-    def to_json(self):
-        data = {'osm_id':self.place.osm_id, 'population':self.place.population, 'pp':self.pp, 'location':self.place.location}
-        return json.dumps(data)
-        
-        
+        self.osm_id = place.osm_id
+        try:
+            self.population = place.population
+        except AttributeError:
+            self.population = None
+        self.location = place.location.json
+              
     def to_xml(self):
 
         if self.population is not None:
@@ -83,11 +81,9 @@ class RPost_Code:
         self.postcode = postcode
         self.place = postcode
         self.pp = pp
-
-    
-    def to_json(self):
-        data = {'osm_id':self.postcode.osm_id, 'pp':self.pp, 'location':self.postcode.location}
-        return json.dumps(data)
+        self.location = postcode.location.json
+        self.osm_id = postcode.osm_id
+        self.population = None
 
     def to_xml(self):
         return ("<postcode>"
