@@ -8,6 +8,7 @@ from rest_framework.renderers import XMLRenderer, JSONRenderer
 from place.forms import IndexForm
 from place.models import Lang
 from place.serialiser import ResultSerialiser
+import ast, json
 
 _DEFAULT_LANG = Lang.objects.get(iso639_1='EN').id
 q = Queryier.Queryier()
@@ -20,12 +21,16 @@ def index(request):
         if form.is_valid():
             query = form.cleaned_data['query']
             lang = form.cleaned_data['langs']
+            dangling = form.cleaned_data['dangling']
+            find_all = form.cleaned_data['find_all']
+            
             if not lang:
                 lang = _DEFAULT_LANG
+                
             if not query:
                 error = True
             else:
-                q_res = q.search([lang], False, False, query, None)
+                q_res = q.search([lang], find_all, dangling, query, None)
                 names, places = _merge_results(q_res)
                 if not names:
                     return _rtr(request, 'index.html', {'no_result': True, 'q': query, 'form': form})
@@ -36,21 +41,36 @@ def index(request):
         
     return _rtr(request, 'index.html', {'error': error, 'form': form})
 
-@api_view(['GET'])
+@api_view(['POST'])
 @renderer_classes((JSONRenderer, XMLRenderer))
 def api(request, query, format=None):
     """
     Method dealing with the API requests. Uses the same method for fetching results as index.
     """
-    if request.method == 'GET':
-        q_res = q.search([_DEFAULT_LANG], False, False, query, None)
+    if request.method == 'POST':
+        dangling = request.DATA['dangling']
+        find_all = request.DATA['find_all']
+        lang_str = request.DATA['langs']
+        langs = []
+        for iso in ast.literal_eval(lang_str):
+            try:
+                langs.append(Lang.objects.filter(iso639_1__iexact=iso)[0].id)
+            except:
+                print("Could not find " + iso)
+                continue
+        if not langs:
+            langs = [_DEFAULT_LANG]
+
+        q_res = q.search(langs, find_all, dangling, query, None)
+        
         if not q_res:
-            return Response(status=status.HTTP_404_NOT_FOUND)
+            return Response(dict(error="True", query=query))
         
         names, places = _merge_results(q_res)
         res = [Results.RPlace(x, names[x.id]) for x in places]
         serialiser = ResultSerialiser(res, many=True)
         return Response(serialiser.data)
+
 
 def _rtr(request, html, c):
     """

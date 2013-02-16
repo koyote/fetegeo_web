@@ -1,0 +1,262 @@
+#! /usr/bin/env python3
+
+# Copyright (C) 2008 Laurence Tratt http://tratt.net/laurie/
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to
+# deal in the Software without restriction, including without limitation the
+# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+# sell copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+# IN THE SOFTWARE.
+
+
+import getopt
+import httplib2
+import json
+import sys
+import textwrap
+from urllib.parse import urlencode, quote
+
+
+_VERSION = "0.3"
+
+_DEFAULT_HOST = "127.0.0.1"
+_DEFAULT_PORT = 8000
+_DEFAULT_LANG = "EN"  # English
+
+_Q_GEO = 0
+_Q_CTRY = 1
+
+_SHORT_USAGE_MSG = ("Usage:\n"
+                    "  * fetegeoc [-l <lang>] [-s <host>] [-p <port>] country <query string>\n"
+                    "  * fetegeoc [-a] [--sa] [-c <country>] [-s <host>] [-p <port>] [-l <lang>]\n"
+                    "    geo <query string>\n"
+    )
+
+_LONG_USAGE_MSG = _SHORT_USAGE_MSG + ("\n"
+                                      "  -a   If -c is specified, find all matches, not just those in the host\n"
+                                      "       country.\n"
+                                      "\n"
+                                      "  -c   Bias the search to the specified country (specified as an ISO2 or ISO3\n"
+                                      "       code).\n"
+                                      "\n"
+                                      "  -l   Specify the preferred language(s) for results to be returned in.\n"
+                                      "       Multiple -l options can be specified; they will be treated in descending\n"
+                                      "       order of preference.\n"
+                                      "\n"
+                                      "  --sa If enabled it will print out the whole area as opposed to only the centroid.\n"
+    )
+
+
+class Fetegeoc:
+    def __init__(self):
+        self._parse_args()
+
+        self._conn = httplib2.Http('.cache')
+
+        if self._q_type == _Q_GEO:
+            self._q_geo()
+        elif self._q_type == _Q_CTRY:
+            self._q_ctry()
+
+
+    def _parse_args(self):
+        try:
+            opts, args = getopt.getopt(sys.argv[1:], 'ac:dhl:s:p:', ["show-area", "sa"])
+        except getopt.error as e:
+            self._usage(str(e), code=1)
+
+        self._find_all = False
+        self._country = None
+        self._allow_dangling = False
+        self._show_area = False
+        self._host = _DEFAULT_HOST
+        self._port = _DEFAULT_PORT
+        self._langs = []
+        for opt, arg in opts:
+            if opt == "-a":
+                self._find_all = True
+            elif opt == "-c":
+                if self._country is not None:
+                    self._usage("Only one -c argument can be specified.")
+                self._country = arg
+            elif opt == "-d":
+                self._allow_dangling = True
+            elif opt in ("--sa", "--show-area"):
+                self._show_area = True
+            elif opt == "-h":
+                self._usage(long_help=True)
+            elif opt == "-v":
+                print(_VERSION)
+                sys.exit(0)
+            elif opt == "-l":
+                self._langs.append(arg)
+            elif opt == "-s":
+                self._host = arg
+            elif opt == "-p":
+                try:
+                    self._port = int(arg)
+                except ValueError:
+                    self._usage("Invalid port number '{0}'.".format(arg))
+
+        if self._find_all and self._country is None:
+            self._usage("-a makes no sense without -c.")
+
+        if len(self._langs) == 0:
+            self._langs.append(_DEFAULT_LANG)
+
+        if len(args) < 2:
+            self._usage("Not enough arguments.")
+        self._q_str = " ".join(args[1:])
+
+        if args[0] == "geo":
+            self._q_type = _Q_GEO
+        elif args[0] == "country":
+            self._q_type = _Q_CTRY
+        else:
+            self._usage("Unknown query type '{0}'.".format(args[0]))
+
+
+    def _usage(self, error_msg="", code=0, long_help=False):
+        if error_msg != "":
+            sys.stderr.write("Error: {0}\n".format(error_msg))
+
+        if long_help:
+            sys.stderr.write(_LONG_USAGE_MSG)
+        else:
+            sys.stderr.write(_SHORT_USAGE_MSG)
+        sys.exit(code)
+    
+    
+    def _pp(self, data):
+        if 'error' in data:
+            print("No match found for {}.".format(data["query"]))
+            return
+        
+        i = 0
+        for result in data:
+            print("Match #{}".format(i))
+            self._print_wrap("{0}: {1}\n".format("OSM ID", result["osm_id"]))
+            self._print_wrap("{0}: {1}\n".format("Location Type", result["location"][0]["type"]))
+            self._print_wrap("{0}: {1}\n".format("Location Coordinates", result["location"][1]["coordinates"]))
+            self._print_wrap("{0}: {1}\n".format("Pretty Print", result["pp"]))
+            population = result["population"]
+            if population:
+                self._print_wrap("{0}: {1}".format("Population", population))
+            i += 1
+            
+            
+    def _print_wrap(self, text):
+        print(textwrap.fill(text, initial_indent=' ', subsequent_indent='     '))
+        
+        
+    def _q_geo(self):
+        fa_txt = str(self._find_all).lower()
+        ad_txt = str(self._allow_dangling).lower()
+        sa_txt = str(self._show_area).lower()
+
+        # langs = "\n".join(["<lang>{0}</lang>".format(x) for x in self._langs])
+        # country = ""
+
+        # if self._country is not None:
+        #    country = "<country>{0}</country>\n".format(self._country)
+        
+        options = dict(find_all=fa_txt, dangling=ad_txt, langs=[x for x in self._langs])
+        url = 'http://{host}:{port}/api/{query}.json'.format(host=self._host, port=self._port, query=quote(self._q_str))
+        response, content = self._conn.request(url, 'POST', urlencode(options), {'Content-type': 'application/x-www-form-urlencoded'})
+
+        if response.status != 200:
+            if response.status == 404:
+                sys.stderr.write("404. Check your config host name and port.\n")
+                sys.exit(1)
+            elif response.status == 500:
+                sys.stderr.write("Server error. Please try again later.\n")
+                sys.exit(1)
+            sys.stderr.write("Unknown error\n")
+            sys.exit(1) 
+        
+        print(response)
+        print(content)
+        data = json.loads(content.decode('utf-8'))
+        self._pp(data)
+
+#        self._sock.sendall(bytes(("<geoquery version='1' find_all='{find_all}' allow_dangling='{allow_dangling}' show_area='{show_area}'>"
+#                                  "{langs}{country}"
+#                                  "<qs>{qs}</qs>"
+#                                  "</geoquery>"
+#            ).format(find_all=fa_txt, allow_dangling=ad_txt, show_area=sa_txt, langs=langs, country=country, qs=self._q_str), 'UTF-8'))
+#
+#        d = minidom.parseString(self._pump_sock())
+#
+#        i = 0
+#        for result in d.firstChild.childNodes:
+#            if isinstance(result, minidom.Text):
+#                continue
+#            dangling = result.getElementsByTagName("dangling")[0]
+#            place = result.getElementsByTagName("place")
+#            if len(place) == 0:
+#                place = result.getElementsByTagName("postcode")
+#            assert len(place) > 0
+#            place = place[0]
+#
+#            if i > 0:
+#                print()
+#            print("Match #{0}".format(i + 1))
+#
+#            j = 0
+#            for e in place.childNodes:
+#                if isinstance(e, minidom.Text):
+#                    continue
+#                j += 1
+#                self._elem_pp(e, 1)
+#
+#            self._elem_pp(dangling, 1)
+#
+#            i += 1
+#
+#        if i == 0:
+#            if d.getElementsByTagName("error"):
+#                sys.stderr.write(d.getElementsByTagName("error")[0].firstChild.nodeValue + "\n")
+#            sys.stderr.write("No match found.\n")
+#            sys.exit(1)
+
+        def _q_ctry(self):
+            return
+#        langs = "\n".join(["<lang>{0}</lang>".format(x) for x in self._langs])
+#        self._sock.sendall(bytes(("<countryquery  version='1'>"
+#                                  "{langs}"
+#                                  "<qs>{qs}</qs>"
+#                                  "</countryquery>"
+#            ).format(langs=langs, qs=self._q_str), 'UTF-8'))
+#
+#        d = minidom.parseString(self._pump_sock())
+#        if len(d.firstChild.childNodes) == 0:
+#            sys.stderr.write("No such country.\n")
+#            sys.exit(1)
+#        else:
+#            i = 0
+#            for e in d.firstChild.firstChild.childNodes:
+#                if i > 0:
+#                    print()
+#                i += 1
+#                self._elem_pp(e, 0)
+#            if i == 0:
+#                if d.getElementsByTagName("error"):
+#                    sys.stderr.write("{0}\n".format(d.getElementsByTagName("error")[0].firstChild.nodeValue))
+#                sys.stderr.write("No match found.\n")
+#                sys.exit(1)
+
+
+if __name__ == "__main__":
+    Fetegeoc()
