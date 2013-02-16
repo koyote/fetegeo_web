@@ -39,6 +39,9 @@ def index(request):
 @api_view(['GET'])
 @renderer_classes((JSONRenderer, XMLRenderer))
 def api(request, query, format=None):
+    """
+    Method dealing with the API requests. Uses the same method for fetching results as index.
+    """
     if request.method == 'GET':
         q_res = q.search([_DEFAULT_LANG], False, False, query, None)
         if not q_res:

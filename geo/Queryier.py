@@ -19,7 +19,7 @@
 # IN THE SOFTWARE.
 
 
-from .import Temp_Cache, FreeText
+from geo import Temp_Cache, FreeText
 from place.models import get_place_name, Place
 
 # Here we set a custom set of parents to be added to the pretty print.

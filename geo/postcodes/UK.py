@@ -19,7 +19,7 @@
 # IN THE SOFTWARE.
 
 
-from Geo import Results
+from geo import Results
 from place.models import Postcode, Country
 import re
 

@@ -21,8 +21,8 @@
 from place.models import PlaceName, Country, Postcode, Lang, get_type
 import hashlib
 import re
-from Geo import Results
-from Geo.Postcodes import UK, US
+from geo import Results
+from geo.postcodes import UK, US
 
 
 _RE_IRRELEVANT_CHARS = re.compile("[,\\n\\r\\t;()]")
