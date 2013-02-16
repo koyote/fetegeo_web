@@ -1,4 +1,5 @@
 from django.contrib.gis.db import models
+from django.contrib.gis.db.models import Q
   
 class Type(models.Model):
     name = models.TextField()
@@ -111,11 +112,19 @@ class PlaceName(models.Model):
 
 # Helper functions
 
-def get_country_name(country, langs):
-    result = PlaceName.objects.filter(place__country=country, place__type=get_type('country'), lang__in=langs)
-    if result.count() < 1:
-        return country.name
-    return result[0].name
+def get_country_name_lang(query, langs):
+    country = PlaceName.objects.filter(type=get_type('country'), name__iexact=query, lang__in=langs)
+    if country.count() == 0:
+        country = PlaceName.objects.filter(type=get_type('country'), name__iexact=query)
+        if country.count() == 0:
+            country = Country.objects.filter(Q(iso3166_2__iexact=query) | Q(iso3166_3__iexact=query))
+    if country.count() == 0 :
+        return None, None
+    
+    try:
+        return country[0].name, country.lang
+    except AttributeError:
+        return country[0].name, None
 
 def get_type(type_name):
     return Type.objects.get(name=type_name)

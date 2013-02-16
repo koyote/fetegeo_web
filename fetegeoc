@@ -139,10 +139,8 @@ class Fetegeoc:
         sys.exit(code)
     
     
-    def _pp(self, data):
-        if 'error' in data:
-            print("No match found for {}.".format(data["query"]))
-            return
+    def _pp_geo(self, data):
+        self._handle_error(data)
         
         i = 0
         for result in data:
@@ -157,105 +155,63 @@ class Fetegeoc:
             i += 1
             
             
+    def _pp_ctry(self, data):
+        self._handle_error(data)
+        print("Match:")
+        self._print_wrap("{0}: {1}\n".format("Query", data["query"]))
+        self._print_wrap("{0}: {1}\n".format("Name", data["result"]))
+        lang = data["lang"]
+        if lang:
+            self._print_wrap("{0}: {1}\n".format("Language", lang))
+  
+            
     def _print_wrap(self, text):
         print(textwrap.fill(text, initial_indent=' ', subsequent_indent='     '))
         
+    
+    def _handle_error(self, data):
+        if 'error' in data:
+            sys.stderr.write("No match found for {}.\n".format(data["query"]))
+            sys.exit(1)
+        
+        
+    def _handle_status(self, status):
+        if status != 200:
+            if status == 404:
+                sys.stderr.write("404. Check your config host name and port.\n")
+                sys.exit(1)
+            elif status == 500:
+                sys.stderr.write("Server error. Please try again later.\n")
+                sys.exit(1)
+            sys.stderr.write("Unknown error\n")
+            sys.exit(1) 
         
     def _q_geo(self):
         fa_txt = str(self._find_all).lower()
         ad_txt = str(self._allow_dangling).lower()
         sa_txt = str(self._show_area).lower()
 
-        # langs = "\n".join(["<lang>{0}</lang>".format(x) for x in self._langs])
-        # country = ""
-
         # if self._country is not None:
         #    country = "<country>{0}</country>\n".format(self._country)
         
-        options = dict(find_all=fa_txt, dangling=ad_txt, langs=[x for x in self._langs])
-        url = 'http://{host}:{port}/api/{query}.json'.format(host=self._host, port=self._port, query=quote(self._q_str))
+        options = dict(find_all=fa_txt, dangling=ad_txt, langs=self._langs)
+        url = 'http://{host}:{port}/api/geo/{query}.json'.format(host=self._host, port=self._port, query=quote(self._q_str))
         response, content = self._conn.request(url, 'POST', urlencode(options), {'Content-type': 'application/x-www-form-urlencoded'})
 
-        if response.status != 200:
-            if response.status == 404:
-                sys.stderr.write("404. Check your config host name and port.\n")
-                sys.exit(1)
-            elif response.status == 500:
-                sys.stderr.write("Server error. Please try again later.\n")
-                sys.exit(1)
-            sys.stderr.write("Unknown error\n")
-            sys.exit(1) 
+        self._handle_status(response.status)
         
-        print(response)
-        print(content)
         data = json.loads(content.decode('utf-8'))
-        self._pp(data)
+        self._pp_geo(data)
+        
 
-#        self._sock.sendall(bytes(("<geoquery version='1' find_all='{find_all}' allow_dangling='{allow_dangling}' show_area='{show_area}'>"
-#                                  "{langs}{country}"
-#                                  "<qs>{qs}</qs>"
-#                                  "</geoquery>"
-#            ).format(find_all=fa_txt, allow_dangling=ad_txt, show_area=sa_txt, langs=langs, country=country, qs=self._q_str), 'UTF-8'))
-#
-#        d = minidom.parseString(self._pump_sock())
-#
-#        i = 0
-#        for result in d.firstChild.childNodes:
-#            if isinstance(result, minidom.Text):
-#                continue
-#            dangling = result.getElementsByTagName("dangling")[0]
-#            place = result.getElementsByTagName("place")
-#            if len(place) == 0:
-#                place = result.getElementsByTagName("postcode")
-#            assert len(place) > 0
-#            place = place[0]
-#
-#            if i > 0:
-#                print()
-#            print("Match #{0}".format(i + 1))
-#
-#            j = 0
-#            for e in place.childNodes:
-#                if isinstance(e, minidom.Text):
-#                    continue
-#                j += 1
-#                self._elem_pp(e, 1)
-#
-#            self._elem_pp(dangling, 1)
-#
-#            i += 1
-#
-#        if i == 0:
-#            if d.getElementsByTagName("error"):
-#                sys.stderr.write(d.getElementsByTagName("error")[0].firstChild.nodeValue + "\n")
-#            sys.stderr.write("No match found.\n")
-#            sys.exit(1)
-
-        def _q_ctry(self):
-            return
-#        langs = "\n".join(["<lang>{0}</lang>".format(x) for x in self._langs])
-#        self._sock.sendall(bytes(("<countryquery  version='1'>"
-#                                  "{langs}"
-#                                  "<qs>{qs}</qs>"
-#                                  "</countryquery>"
-#            ).format(langs=langs, qs=self._q_str), 'UTF-8'))
-#
-#        d = minidom.parseString(self._pump_sock())
-#        if len(d.firstChild.childNodes) == 0:
-#            sys.stderr.write("No such country.\n")
-#            sys.exit(1)
-#        else:
-#            i = 0
-#            for e in d.firstChild.firstChild.childNodes:
-#                if i > 0:
-#                    print()
-#                i += 1
-#                self._elem_pp(e, 0)
-#            if i == 0:
-#                if d.getElementsByTagName("error"):
-#                    sys.stderr.write("{0}\n".format(d.getElementsByTagName("error")[0].firstChild.nodeValue))
-#                sys.stderr.write("No match found.\n")
-#                sys.exit(1)
+    def _q_ctry(self):
+        options = dict(langs=self._langs)
+        url = 'http://{host}:{port}/api/ctry/{query}.json'.format(host=self._host, port=self._port, query=quote(self._q_str))
+        response, content = self._conn.request(url, 'POST', urlencode(options), {'Content-type': 'application/x-www-form-urlencoded'})
+            
+        self._handle_status(response.status)
+        data = json.loads(content.decode('utf-8'))
+        self._pp_ctry(data)
 
 
 if __name__ == "__main__":

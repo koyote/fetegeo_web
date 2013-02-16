@@ -1,14 +1,13 @@
 from geo import Queryier, Results
 from django.core.context_processors import csrf
 from django.shortcuts import render_to_response
-from rest_framework import status
 from rest_framework.decorators import api_view, renderer_classes
 from rest_framework.response import Response
 from rest_framework.renderers import XMLRenderer, JSONRenderer
 from place.forms import IndexForm
-from place.models import Lang
+from place.models import Lang, get_country_name_lang
 from place.serialiser import ResultSerialiser
-import ast, json
+import ast
 
 _DEFAULT_LANG = Lang.objects.get(iso639_1='EN').id
 q = Queryier.Queryier()
@@ -43,33 +42,62 @@ def index(request):
 
 @api_view(['POST'])
 @renderer_classes((JSONRenderer, XMLRenderer))
-def api(request, query, format=None):
+def geo(request, query, format=None):
     """
     Method dealing with the API requests. Uses the same method for fetching results as index.
     """
-    if request.method == 'POST':
-        dangling = request.DATA['dangling']
-        find_all = request.DATA['find_all']
-        lang_str = request.DATA['langs']
-        langs = []
-        for iso in ast.literal_eval(lang_str):
-            try:
-                langs.append(Lang.objects.filter(iso639_1__iexact=iso)[0].id)
-            except:
-                print("Could not find " + iso)
-                continue
-        if not langs:
-            langs = [_DEFAULT_LANG]
+        
+    dangling = request.DATA['dangling']
+    find_all = request.DATA['find_all']
+    lang_str = request.DATA['langs']
+    langs = _find_langs(lang_str)
+    
+    if not langs:
+        langs = [_DEFAULT_LANG]
 
-        q_res = q.search(langs, find_all, dangling, query, None)
+    q_res = q.search(langs, find_all, dangling, query, None)
         
-        if not q_res:
-            return Response(dict(error="True", query=query))
+    if not q_res:
+        return Response(dict(error="True", query=query))
         
-        names, places = _merge_results(q_res)
-        res = [Results.RPlace(x, names[x.id]) for x in places]
-        serialiser = ResultSerialiser(res, many=True)
-        return Response(serialiser.data)
+    names, places = _merge_results(q_res)
+    res = [Results.RPlace(x, names[x.id]) for x in places]
+    serialiser = ResultSerialiser(res, many=True)
+    return Response(serialiser.data)
+
+
+@api_view(['POST'])
+@renderer_classes((JSONRenderer, XMLRenderer))
+def ctry(request, query, format=None):
+    """
+    Method dealing with the API requests. Uses the same method for fetching results as index.
+    """
+
+    lang_str = request.DATA['langs']
+    
+    langs = _find_langs(lang_str)
+    if not langs:
+        langs = [_DEFAULT_LANG]
+
+    country, lang = get_country_name_lang(query, langs)
+    if lang:
+        lang = lang.name
+        
+    if not country:
+        return Response(dict(error="True", query=query))
+
+    return Response(dict(result=country, query=query, lang=lang))
+
+
+def _find_langs(lang_str):
+    langs = []
+    for iso in ast.literal_eval(lang_str):
+        try:
+            langs.append(Lang.objects.filter(iso639_1__iexact=iso)[0].id)
+        except:
+            print("Could not find " + iso)
+            continue
+    return langs
 
 
 def _rtr(request, html, c):
@@ -78,6 +106,7 @@ def _rtr(request, html, c):
     """
     c.update(csrf(request))
     return render_to_response(html, c)
+
 
 def _merge_results(q_res):
     """
