@@ -56,8 +56,7 @@ def postcode_match(ft, i):
         if p.count() > 0:
             # We might have got multiple matches, in which case we arbitrarily pick the first one.
             fst = p[0]
-            pp = _pp_place(ft, fst.main, fst.id)
-            match = Results.RPost_Code(fst.id, fst.osm_id, fst.country.id, fst.location, pp)
+            match = Results.RPost_Code(ft, fst)
             yield match, i - 1
 
     if i == 0:
@@ -84,8 +83,7 @@ def postcode_match(ft, i):
 
     if p.count() > 0:
         fst = p[0]
-        pp = _pp_place(ft, "{0} {1}".format(fst.main, fst.sup), fst.id)
-        match = Results.RPost_Code(fst.id, fst.osm_id, fst.country.id, fst.location, pp)
+        match = Results.RPost_Code(ft, fst)
         yield match, i - 2
         return
 
@@ -96,8 +94,7 @@ def postcode_match(ft, i):
 
     if p.count() > 0:
         fst = p[0]
-        pp = _pp_place(ft, "{0} {1}".format(fst.main, fst.sup[0]), fst.id)  # # TODO: is the sup[0] correct?
-        match = Results.RPost_Code(fst.id, fst.osm_id, fst.country.id, fst.location, pp)
+        match = Results.RPost_Code(ft, fst)
         yield match, i - 2
         return
 
@@ -108,15 +105,5 @@ def postcode_match(ft, i):
 
     if p.count() > 0:
         fst = p[0]
-        pp = _pp_place(ft, fst.main, fst.id)
-        match = Results.RPost_Code(fst.id, fst.osm_id, fst.country.id, fst.location, pp)
+        match = Results.RPost_Code(ft, fst)
         yield match, i - 2
-
-def _pp_place(ft, pp, postcode_id):
-
-    p = Postcode.objects.get(id=postcode_id)
-
-    if p.parent:
-        pp = "{0}, {1}".format(pp, ft.queryier.pp_place(ft, p.parent))
-
-    return pp

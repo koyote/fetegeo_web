@@ -187,14 +187,12 @@ class Fetegeoc:
             sys.exit(1) 
         
     def _q_geo(self):
-        fa_txt = str(self._find_all).lower()
-        ad_txt = str(self._allow_dangling).lower()
-        sa_txt = str(self._show_area).lower()
+
 
         # if self._country is not None:
         #    country = "<country>{0}</country>\n".format(self._country)
         
-        options = dict(find_all=fa_txt, dangling=ad_txt, langs=self._langs)
+        options = dict(find_all=self._find_all, dangling=self._allow_dangling, langs=self._langs, show_all=self._show_area)
         url = 'http://{host}:{port}/api/geo/{query}.json'.format(host=self._host, port=self._port, query=quote(self._q_str))
         response, content = self._conn.request(url, 'POST', urlencode(options), {'Content-type': 'application/x-www-form-urlencoded'})
 

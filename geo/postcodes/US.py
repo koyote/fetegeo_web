@@ -43,21 +43,10 @@ def _sub_pc_match(ft, i):
 
     if sup is not None:
         p = Postcode.objects.filter(main__iexact=main, sup__iexact=sup, country=us)
-    else:
+    if sup is None or p.count() == 0:
         p = Postcode.objects.filter(main__iexact=main, country=us)
 
     for cnd in p.all():
-        pp = _pp_place(ft, cnd.main, cnd.id)
 
-        match = Results.RPost_Code(cnd.id, cnd.osm_id, cnd.country.id, cnd.location, pp)
+        match = Results.RPost_Code(ft, cnd)
         yield match, i - 1
-
-
-def _pp_place(ft, pp, postcode_id):
-
-    p = Postcode.objects.get(id=postcode_id)
-
-    if p.parent:
-        pp = "{0}, {1}".format(pp, ft.queryier.pp_place(ft, p.parent))
-
-    return pp

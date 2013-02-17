@@ -22,19 +22,20 @@ class Result:
     def __init__(self, ri, dangling):
         self.ri = ri
         self.dangling = dangling
-
-
-class RCountry:
-    def __init__(self, country, pp):
-        self.id = country.id
-        self.name = country.name
-        self.pp = pp
+    
+    def print_pp(self, admin_levels=[]):
+        pp = self.ri.pp
+        res = [pp[max(pp)]]
+        for k in sorted(pp, reverse=True):
+            if k != max(pp) and (k in admin_levels or not admin_levels):
+                res.append(pp[k])
+        return ", ".join(res) 
 
 
 class RPlace:
-    def __init__(self, place, pp):
+    def __init__(self, queryier, place):
         self.place = place
-        self.pp = pp
+        self.pp = queryier.pp_place(place)
         self.osm_id = place.osm_id
         self.location = place.location
         try:
@@ -44,9 +45,9 @@ class RPlace:
               
 
 class RPost_Code:
-    def __init__(self, postcode, pp):
+    def __init__(self, queryier, postcode):
         self.postcode = postcode
         self.place = postcode
-        self.pp = pp
+        self.pp = queryier.pp_postcode(postcode)
         self.location = postcode.location
         self.osm_id = postcode.osm_id

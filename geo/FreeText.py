@@ -21,6 +21,7 @@
 from place.models import PlaceName, Country, Postcode, Lang, get_type
 import hashlib
 import re
+import ast
 from geo import Results
 from geo.postcodes import UK, US
 
@@ -35,11 +36,12 @@ class FreeText:
     
     def search(self, queryier, langs, find_all, allow_dangling, qs, host_country):
         self.queryier = queryier
+        self.qs = _cleanup(qs)
+        self.split, self.split_indices = _split(self.qs)
+        
         self.langs = [Lang.objects.get(id=lang) for lang in langs]
         self.find_all = find_all
         self.allow_dangling = allow_dangling
-        self.qs = _cleanup(qs)
-        self.split, self.split_indices = _split(self.qs)
         self.host_country = host_country
         
         results_cache_key = (tuple(langs), find_all, allow_dangling, self.qs, host_country)
@@ -110,7 +112,7 @@ class FreeText:
                     i += 1
 
         # Sort the results into alphabetical order.
-        results.sort(key=lambda x: x.pp)
+        results.sort(key=lambda x: x.pp[max(x.pp)])
 
         # Now we try to find the best match.
 
@@ -279,11 +281,9 @@ class FreeText:
                         continue
                     self._matched_places.add(done_key)
 
-                    pp = self.queryier.pp_place(self, p.place)
-
                     self._longest_match = new_i + 1
 
-                    self._matches[new_i + 1].append(Results.RPlace(p.place, pp))
+                    self._matches[new_i + 1].append(Results.RPlace(self.queryier, p.place))
 
             if postcode is None:
                 for sub_postcode, k in self._iter_postcode(i, country):
@@ -358,14 +358,7 @@ class FreeText:
                 # We search for UK/US postcodes elsewhere.
                 continue
 
-            # Search for a parent place
-            parent = cnd.parent
-            pp = ''
-            
-            if parent:
-                pp = "{0}, {1}".format(cnd.main, self.queryier.pp_place(self, parent))
-
-            match = Results.RPost_Code(cnd, pp)
+            match = Results.RPost_Code(self.queryier, cnd)
             yield match, i - 1
 
         if country not in uk + [None]:

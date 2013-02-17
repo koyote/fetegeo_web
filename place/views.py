@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from rest_framework.renderers import XMLRenderer, JSONRenderer
 from place.forms import IndexForm
 from place.models import Lang, get_country_name_lang
-from place.serialiser import ResultSerialiser
+from place.serialiser import ResultSerialiser, SerialisableResult
 import ast
 
 _DEFAULT_LANG = Lang.objects.get(iso639_1='EN').id
@@ -47,9 +47,10 @@ def geo(request, query, format=None):
     Method dealing with the API requests. Uses the same method for fetching results as index.
     """
         
-    dangling = request.DATA['dangling']
-    find_all = request.DATA['find_all']
+    dangling = ast.literal_eval(request.DATA['dangling'])  # Convert String to Boolean
+    find_all = ast.literal_eval(request.DATA['find_all'])
     lang_str = request.DATA['langs']
+    show_all = ast.literal_eval(request.DATA['show_all'])
     langs = _find_langs(lang_str)
     
     if not langs:
@@ -61,8 +62,8 @@ def geo(request, query, format=None):
         return Response(dict(error="True", query=query))
         
     names, places = _merge_results(q_res)
-    res = [Results.RPlace(x, names[x.id]) for x in places]
-    serialiser = ResultSerialiser(res, many=True)
+    res = [SerialisableResult(x, names[x.id]) for x in places]
+    serialiser = ResultSerialiser(res, many=True, context={'show_all': show_all})
     return Response(serialiser.data)
 
 
@@ -73,9 +74,9 @@ def ctry(request, query, format=None):
     Method dealing with the API requests. Uses the same method for fetching results as index.
     """
 
-    lang_str = request.DATA['langs']
-    
+    lang_str = request.DATA['langs']    
     langs = _find_langs(lang_str)
+    
     if not langs:
         langs = [_DEFAULT_LANG]
 
@@ -108,7 +109,7 @@ def _rtr(request, html, c):
     return render_to_response(html, c)
 
 
-def _merge_results(q_res):
+def _merge_results(q_res, admin_levels=[]):
     """
     Method takes a list of results produced by the fetegeo search command.
     It will skip any results with exactly the same pretty-print name (as they are assumed to be identical)
@@ -120,6 +121,7 @@ def _merge_results(q_res):
     ls = dict()
     for r in q_res:
         place = r.ri.place
+        pp = r.print_pp(admin_levels)
         if place.location is None:
             continue;
         if place.location.geom_type == 'LineString':
@@ -129,12 +131,12 @@ def _merge_results(q_res):
                     break;
             else:
                 ls[place.id] = place
-                names[place.id] = r.ri.pp
+                names[place.id] = pp
 
         else:
-            if r.ri.pp not in names.values():
+            if pp not in names.values():
                 places.append(place)
-                names[place.id] = r.ri.pp
+                names[place.id] = pp
     places.extend(place for place in ls.values())
             
     return names, places
