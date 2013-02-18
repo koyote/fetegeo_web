@@ -1,15 +1,15 @@
-from geo import Queryier
+from django.core.cache import cache
 from django.core.context_processors import csrf
 from django.shortcuts import render_to_response
-from rest_framework.decorators import api_view, renderer_classes
-from rest_framework.response import Response
-from rest_framework.renderers import XMLRenderer, JSONRenderer
+from geo import Queryier
 from place.forms import IndexForm
 from place.models import Lang, get_country_name_lang, Place, Country
 from place.serialiser import ResultSerialiser, SerialisableResult
+from rest_framework.decorators import api_view, renderer_classes
+from rest_framework.renderers import XMLRenderer, JSONRenderer
+from rest_framework.response import Response
 import ast
 import os
-from django.core.cache import cache
 import pygeoip
 
 _DEFAULT_LANG = Lang.objects.get(iso639_1='EN').id
@@ -105,7 +105,7 @@ def get_location(request, query, format=None):
     This only retrieves locations that are stored in the cache.
     """
     t = request.DATA['type']
-    location = cache.get(query+t)
+    location = cache.get(query + t)
        
     if not location:
         return Response(dict(error="True", query=query))
@@ -117,7 +117,7 @@ def get_location(request, query, format=None):
         lat = []
         lng = []
         for polys in location.coords:
-                for x,y in polys:
+                for x, y in polys:
                     lat.append(x)
                     lng.append(y)
                     
@@ -184,9 +184,8 @@ def _merge_results(q_res, admin_levels=[]):
     
     # Cache locations in order to retrieve them easily onclick.
     for p in places:
-        cache.set(str(p.id)+p.__class__.__name__, p.location, 9999)
-        
-
+        key = str(p.id) + p.__class__.__name__
+        cache.set(key, p.location, 9999)    
             
     return place_names, postcode_names, places
 
