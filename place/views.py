@@ -158,7 +158,7 @@ def _merge_results(q_res, admin_levels=[]):
         pp = r.print_pp(admin_levels)
         if place.location is None:
             continue;
-        if place.location.geom_type == 'LineString':
+        if place.location.geom_type in ('LineString', 'MultiLineString'):
             for i, p in ls.items():
                 if place.location.distance(p.location) < 0.01:  # TODO: is this number good?
                     ls[i].location = p.location.union(place.location).merged
@@ -177,11 +177,13 @@ def _merge_results(q_res, admin_levels=[]):
                     place_names[place.id] = pp
                 else:
                     postcode_names[place.id] = pp
-                    
+
     places.extend(place for place in ls.values())
     
     # Cache locations in order to retrieve them easily onclick.
     for p in places:
         q.merged_location_cache[(p.id, p.__class__.__name__)] = p.location
+        
+
             
     return place_names, postcode_names, places

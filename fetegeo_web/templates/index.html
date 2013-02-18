@@ -2,33 +2,45 @@
 {% load staticfiles %}
 <html>
 	<head>
+		<link href='http://fonts.googleapis.com/css?family=Ubuntu' rel='stylesheet' type='text/css'>
 		<title>Fetegeo Webview</title>
 		<style>
 			html, body {
 				margin: 0;
 				padding: 0;
-				background-color: black;
-				color: white;
+				background-color: #020203;
+				color: #687F9C;
+				font-family: 'Ubuntu';
 			}
 			#map {
 				width: 45%;
 				height: 75%;
-				float: left;
+				float: right;
+				margin-left: 52%;
 				position: absolute;
 			}
 			.linkOFF span {
-				color: gray;
+				color: #687F9C;
 			}
 			.linkON span {
-				color: white;
-				background-color: gray;
+				color: #132033;
+				background-color: #697E9C;
+				cursor: pointer;
 			}
-			#right {
-				width: 54%;
-				float: right;
+			#left {
+				margin-left: 2%;
+				width: 52%;
+				float: left;
 			}
 			.results {
 				margin-top: 1em;
+			}
+			.searchForm {
+				margin-bottom: 5%;
+			}
+			h1 {
+				margin-left: 2%;
+				background-color: #132033;
 			}
 
 		</style>
@@ -55,7 +67,8 @@
 			}
 
 			function getResult(id, type) {
-				r = id+type;	// Cache key
+				r = id + type;
+				// Cache key
 				if (!result[r]) {
 					$.ajax({
 						type : "POST",
@@ -150,10 +163,10 @@
 		</script>
 	</head>
 	<body onload='initialize()'>
-
+		<h1>Fetegeo Webview</h1>
 		<div id=map></div>
 
-		<div id=right>
+		<div id=left>
 			<form action="" method="post" class="searchForm">
 				{% csrf_token %}
 				{{ form.as_p }}
@@ -169,7 +182,7 @@
 			{% endif %}
 
 			{% if place_names %}
-			<h1>Places</h1>
+			<h2>Places</h2>
 			<div id=place_results >
 				{% for id, name in place_names.items %}
 				<div id={{id}} class='results linkOFF' type='Place'>
@@ -180,7 +193,7 @@
 			{% endif %}
 
 			{% if postcode_names %}
-			<h1>Postcodes</h1>
+			<h2>Postcodes</h2>
 			<div id=postcode_results>
 				{% for id, name in postcode_names.items %}
 				<div id={{id}} class='results linkOFF' type='Postcode'>
