@@ -1,174 +1,195 @@
 <!DOCTYPE html>
+{% load staticfiles %}
 <html>
 	<head>
 		<title>Fetegeo Webview</title>
+		<style>
+			html, body {
+				margin: 0;
+				padding: 0;
+				background-color: black;
+				color: white;
+			}
+			#map {
+				width: 45%;
+				height: 75%;
+				float: left;
+				position: absolute;
+			}
+			.linkOFF span {
+				color: gray;
+			}
+			.linkON span {
+				color: white;
+				background-color: gray;
+			}
+			#right {
+				width: 54%;
+				float: right;
+			}
+			.results {
+				margin-top: 1em;
+			}
+
+		</style>
 		<script src="http://maps.google.com/maps/api/js?sensor=false"></script>
 		<script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
 		<script>
-			var map, marker, polyline, polygon, resultByID = {};
+			var map, marker, polyline, polygon, result = {};
 			function initialize() {
 				var mapOptions = {
-          			center: new google.maps.LatLng(49.5981299, 6.1308834),
-          			zoom: 8,
-          			mapTypeId: google.maps.MapTypeId.ROADMAP
-        		};
+					center : new google.maps.LatLng(49.5981299, 6.1308834),
+					zoom : 8,
+					mapTypeId : google.maps.MapTypeId.ROADMAP
+				};
+				console.log(document.getElementById('map'));
 				map = new google.maps.Map(document.getElementById('map'), mapOptions);
 			}
-			
+
 			function getBounds(coorArray) {
 				var bounds = new google.maps.LatLngBounds();
-				for (i = 0, len = coorArray.length; i < len; i++) {
+				for ( i = 0, len = coorArray.length; i < len; i++) {
 					bounds.extend(coorArray[i]);
 				}
 				return bounds;
 			}
-			
-// TODO: Stop preloading all of this; it's too slow, uses up all the RAM and stupid.
-//		 Lets make it load onClick!
 
-			{% for result in places %}	
-			
-				{% if result.location.x and result.location.y %}
-					resultByID[{{ result.id }}] = { 
-						lat: {{ result.location.x }},
-						lng: {{ result.location.y }},
-						type: '{{ result.location.geom_type }}',
-						centerLat: '{{ result.location.centroid.x }}',
-						centerLng: '{{ result.location.centroid.y }}'
-					};
-				{% else %}
-				
-				{% if result.location.coords %}
-					var lat = new Array();
-					var lng = new Array();
-					{% for polys in result.location.coords %}
-						{% for x, y in polys %}
-							lat.push({{x}});
-							lng.push({{y}});
-						{% endfor %}
-					{% endfor %}
-					resultByID[{{ result.id }}] = { 
-						lat: lat,
-						lng: lng,
-						type: '{{ result.location.geom_type }}',
-						centerLat: '{{ result.location.centroid.x }}',
-						centerLng: '{{ result.location.centroid.y }}'
-					};
-				{% endif %}{% endif %}
-			{% endfor %}
+			function getResult(id, type) {
+				r = id+type;	// Cache key
+				if (!result[r]) {
+					$.ajax({
+						type : "POST",
+						url : "/api/loc/" + id + ".json",
+						data : {
+							'type' : type
+						},
+						async : false,
+						dataType : 'json'
+					}).done(function(data) {
+						if (!data["Error"]) {
+							result[r] = {
+								lat : data["x"],
+								lng : data["y"],
+								type : data["type"],
+								centerLat : data["centroidX"],
+								centerLng : data["centroidY"]
+							};
+						}
+					});
+				}
+				return result[r];
+			};
+
+			function populateMap(result) {
+				var coorArray = [];
+				for ( i = 0; i < result.lat.length; i++) {
+					coorArray[i] = new google.maps.LatLng(result.lat[i], result.lng[i]);
+				}
+				switch (result.type) {
+					case 'Point':
+						var coor = new google.maps.LatLng(result.lat, result.lng);
+						if (marker)
+							marker.setMap();
+						marker = new google.maps.Marker({
+							map : map,
+							position : coor
+						});
+						map.setZoom(15);
+						break;
+					case 'LineString':
+					case 'MultiLineString':
+						if (polyline)
+							polyline.setMap();
+						polyline = new google.maps.Polyline({
+							path : coorArray,
+							strokeColor : '#FF0000',
+							strokeOpacity : 1.0,
+							strokeWeight : 2,
+							map : map
+						});
+						map.fitBounds(getBounds(coorArray));
+						break;
+					case 'Polygon':
+					case 'MultiPolygon':
+						if (polygon)
+							polygon.setMap();
+						polygon = new google.maps.Polygon({
+							paths : coorArray,
+							strokeColor : '#FF0000',
+							strokeOpacity : '1.0',
+							strokeWeight : 2,
+							fillColor : '#FF0000',
+							fillOpacity : 0.35,
+							map : map
+						});
+						map.fitBounds(getBounds(coorArray));
+						break;
+				}
+				center = new google.maps.LatLng(result.centerLat, result.centerLng);
+				map.panTo(center);
+			}
+
 
 			$(document).ready(function() {
 				function resultOnclick() {
-					$('.results').each(function() {
+					$('div[class^=results]').each(function() {
 						$(this).click(function() {
-							var result = resultByID[this.id];
-							var coorArray = [];
-							for (i = 0; i < result.lat.length; i++) {
-								coorArray[i] = new google.maps.LatLng(result.lat[i], result.lng[i]);
-							}
-							switch (result.type) {
-								case'Point':
-									var coor = new google.maps.LatLng(result.lat, result.lng);
-									if (marker)
-										marker.setMap();
-									marker = new google.maps.Marker({
-										map : map,
-										position : coor
-									});
-									map.setZoom(15);
-									break;
-								case 'LineString': 
-								case 'MultiLineString':
-									if (polyline)
-										polyline.setMap();
-									polyline = new google.maps.Polyline({
-										path: coorArray,
-										strokeColor: '#FF0000',
-										strokeOpacity: 1.0,
-										strokeWeight: 2,
-										map: map
-									});
-									map.fitBounds(getBounds(coorArray));
-									break;
-								case 'Polygon':
-								case 'MultiPolygon':
-									if (polygon)
-										polygon.setMap();
-									polygon = new google.maps.Polygon({
-										paths: coorArray,
-										strokeColor: '#FF0000',
-										strokeOpacity: '1.0',
-										strokeWeight: 2,
-										fillColor: '#FF0000',
-										fillOpacity: 0.35,
-										map: map
-									});
-									map.fitBounds(getBounds(coorArray));
-									break;
-							}
-							center = new google.maps.LatLng(result.centerLat, result.centerLng);
-							map.panTo(center);
+							var result = getResult(this.id, $(this).attr('type'));
+							populateMap(result);
 						}).hover(function() {
 							this.className = this.className.replace('OFF', 'ON');
 						}, function() {
 							this.className = this.className.replace('ON', 'OFF');
 						});
-					});
+					})
 				}
 
 				resultOnclick();
 			});
 
 		</script>
-		<style>
-			html { 
-				height: 100%
-			}
-			body {
-				height: 100%;
-				margin: 0;
-				padding: 0
-			}
-			#map {
-				width: 100%;
-				height: 75%
-			}
-			#results {
-				overflow: auto;
-				width: 500px;
-				height: 100px
-			}
-			.linkOFF {
-				color: darkblue
-			}
-			.linkON {
-				color: white;
-				background-color: darkblue
-			}
-		</style>
 	</head>
 	<body onload='initialize()'>
+
 		<div id=map></div>
-		<form action="" method="post">
-			{% csrf_token %}
-			{{ form }}
-			<input id="searchButton" type="submit" value='Search' />
-		</form>
-		
-		{% if error %}
+
+		<div id=right>
+			<form action="" method="post" class="searchForm">
+				{% csrf_token %}
+				{{ form.as_p }}
+				<input id="searchButton" type="submit" value='Search' />
+			</form>
+
+			{% if error %}
 			Bad query!
-		{% endif %}
-		
-		{%if no_result %}
+			{% endif %}
+
+			{%if no_result %}
 			No Results for {{q}} :(
-		{% endif %}
-		
-		<div id=results>
-		{% for id, name in names.items %}	
-			<div id={{id}} class='results linkOFF'>
-				{{name}}
+			{% endif %}
+
+			{% if place_names %}
+			<h1>Places</h1>
+			<div id=place_results >
+				{% for id, name in place_names.items %}
+				<div id={{id}} class='results linkOFF' type='Place'>
+					<span>{{name}}</span>
+				</div>
+				{% endfor %}
 			</div>
-		{% endfor %}		
+			{% endif %}
+
+			{% if postcode_names %}
+			<h1>Postcodes</h1>
+			<div id=postcode_results>
+				{% for id, name in postcode_names.items %}
+				<div id={{id}} class='results linkOFF' type='Postcode'>
+					<span>{{name}}</span>
+				</div>
+				{% endfor %}
+			</div>
+			{% endif %}
+
 		</div>
 	</body>
 </html>

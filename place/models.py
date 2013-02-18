@@ -113,7 +113,7 @@ class PlaceName(models.Model):
 # Helper functions
 
 def get_country_name_lang(query, langs):
-    country = PlaceName.objects.filter(type=get_type('country'), name__iexact=query, lang__in=langs)
+    country = PlaceName.objects.filter(type=get_type('country'), name__iexact=query, lang__in=langs)  # TODO: Why no results?
     if country.count() == 0:
         country = PlaceName.objects.filter(type=get_type('country'), name__iexact=query)
         if country.count() == 0:

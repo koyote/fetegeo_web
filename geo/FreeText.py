@@ -21,7 +21,6 @@
 from place.models import PlaceName, Country, Postcode, Lang, get_type
 import hashlib
 import re
-import ast
 from geo import Results
 from geo.postcodes import UK, US
 

@@ -1,11 +1,11 @@
-from geo import Queryier, Results
+from geo import Queryier
 from django.core.context_processors import csrf
 from django.shortcuts import render_to_response
 from rest_framework.decorators import api_view, renderer_classes
 from rest_framework.response import Response
 from rest_framework.renderers import XMLRenderer, JSONRenderer
 from place.forms import IndexForm
-from place.models import Lang, get_country_name_lang
+from place.models import Lang, get_country_name_lang, Place, Postcode
 from place.serialiser import ResultSerialiser, SerialisableResult
 import ast
 
@@ -30,11 +30,11 @@ def index(request):
                 error = True
             else:
                 q_res = q.search([lang], find_all, dangling, query, None)
-                names, places = _merge_results(q_res)
-                if not names:
+                place_names, postcode_names, places = _merge_results(q_res)
+                if (not place_names and not postcode_names) or not places:
                     return _rtr(request, 'index.html', {'no_result': True, 'q': query, 'form': form})
                 else:
-                    return _rtr(request, 'index.html', {'places': places, 'names': names, 'form': form})
+                    return _rtr(request, 'index.html', {'place_names': place_names, 'postcode_names': postcode_names, 'form': form})
     else:
         form = IndexForm()
         
@@ -44,13 +44,13 @@ def index(request):
 @renderer_classes((JSONRenderer, XMLRenderer))
 def geo(request, query, format=None):
     """
-    Method dealing with the API requests. Uses the same method for fetching results as index.
+    Method dealing with the API requests to geo. Uses the same method for fetching results as index.
     """
-        
+
     dangling = ast.literal_eval(request.DATA['dangling'])  # Convert String to Boolean
     find_all = ast.literal_eval(request.DATA['find_all'])
-    lang_str = request.DATA['langs']
     show_all = ast.literal_eval(request.DATA['show_all'])
+    lang_str = request.DATA['langs']
     langs = _find_langs(lang_str)
     
     if not langs:
@@ -61,8 +61,9 @@ def geo(request, query, format=None):
     if not q_res:
         return Response(dict(error="True", query=query))
         
-    names, places = _merge_results(q_res)
-    res = [SerialisableResult(x, names[x.id]) for x in places]
+    place_names, postcode_names, places = _merge_results(q_res)
+    place_names.update(postcode_names)
+    res = [SerialisableResult(x, place_names[x.id]) for x in places]
     serialiser = ResultSerialiser(res, many=True, context={'show_all': show_all})
     return Response(serialiser.data)
 
@@ -71,7 +72,7 @@ def geo(request, query, format=None):
 @renderer_classes((JSONRenderer, XMLRenderer))
 def ctry(request, query, format=None):
     """
-    Method dealing with the API requests. Uses the same method for fetching results as index.
+    Method dealing with the API requests to country.
     """
 
     lang_str = request.DATA['langs']    
@@ -88,6 +89,38 @@ def ctry(request, query, format=None):
         return Response(dict(error="True", query=query))
 
     return Response(dict(result=country, query=query, lang=lang))
+
+
+@api_view(['POST'])
+@renderer_classes((JSONRenderer, XMLRenderer))
+def get_location(request, query, format=None):
+    """
+    Method dealing with the API requests asking for the location of a place's id.
+    This only retrieves locations that are stored in the cache.
+    """
+    t = request.DATA['type']
+    
+    try:
+        location = q.merged_location_cache[(int(query), t)]
+    except:
+        location = None
+        
+    if not location:
+        return Response(dict(error="True", query=query))
+    
+    try:
+        lat = location.x
+        lng = location.y
+    except AttributeError:
+        lat = []
+        lng = []
+        for polys in location.coords:
+                for x,y in polys:
+                    lat.append(x)
+                    lng.append(y)
+                    
+    return Response(dict(type=location.geom_type, x=lat, y=lng, centroidX=location.centroid.x, centroidY=location.centroid.y))
+        
 
 
 def _find_langs(lang_str):
@@ -114,9 +147,10 @@ def _merge_results(q_res, admin_levels=[]):
     Method takes a list of results produced by the fetegeo search command.
     It will skip any results with exactly the same pretty-print name (as they are assumed to be identical)
     It will also try and merge LineStrings that are close enough to other LineStrings to be considered part of the same street.
-    The method returns a list of places and a dict of place.id's to pretty print names.
+    The method returns a list of places and a dict of place.id's to pretty print place_names.
     """
-    names = dict()
+    place_names = dict()
+    postcode_names = dict()
     places = list()
     ls = dict()
     for r in q_res:
@@ -131,12 +165,23 @@ def _merge_results(q_res, admin_levels=[]):
                     break;
             else:
                 ls[place.id] = place
-                names[place.id] = pp
+                if isinstance(place, Place):
+                    place_names[place.id] = pp
+                else:
+                    postcode_names[place.id] = pp
 
         else:
-            if pp not in names.values():
+            if pp not in place_names.values():
                 places.append(place)
-                names[place.id] = pp
+                if isinstance(place, Place):
+                    place_names[place.id] = pp
+                else:
+                    postcode_names[place.id] = pp
+                    
     places.extend(place for place in ls.values())
+    
+    # Cache locations in order to retrieve them easily onclick.
+    for p in places:
+        q.merged_location_cache[(p.id, p.__class__.__name__)] = p.location
             
-    return names, places
+    return place_names, postcode_names, places

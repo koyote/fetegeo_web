@@ -57,7 +57,7 @@ MEDIA_URL = ''
 # Don't put anything in this directory yourself; store your static files
 # in apps' "static/" subdirectories and in STATICFILES_DIRS.
 # Example: "/home/media/media.lawrence.com/static/"
-STATIC_ROOT = ''
+STATIC_ROOT = '',
 
 # URL prefix for static files.
 # Example: "http://media.lawrence.com/static/"
@@ -146,3 +146,11 @@ LOGGING = {
         },
     }
 }
+
+TEMPLATE_CONTEXT_PROCESSORS = (
+    "django.core.context_processors.auth",
+    "django.core.context_processors.request",
+    "django.core.context_processors.media",
+    "django.core.context_processors.csrf",
+    "django.core.context_processors.i18n",
+)
