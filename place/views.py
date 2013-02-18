@@ -5,15 +5,21 @@ from rest_framework.decorators import api_view, renderer_classes
 from rest_framework.response import Response
 from rest_framework.renderers import XMLRenderer, JSONRenderer
 from place.forms import IndexForm
-from place.models import Lang, get_country_name_lang, Place, Postcode
+from place.models import Lang, get_country_name_lang, Place, Country
 from place.serialiser import ResultSerialiser, SerialisableResult
 import ast
+import os
+from django.core.cache import cache
+import pygeoip
 
 _DEFAULT_LANG = Lang.objects.get(iso639_1='EN').id
 q = Queryier.Queryier()
+geoip = pygeoip.GeoIP(os.path.join(os.path.dirname(__file__), 'geoip/GeoLiteCity.dat').replace('\\', '/'), pygeoip.MEMORY_CACHE)
     
 def index(request):
     error = False
+    ip = _get_client_ip(request)
+    user_lat_lng, ctry = _get_coor_and_country(ip)
     
     if request.method == 'POST':
         form = IndexForm(request.POST)
@@ -29,16 +35,16 @@ def index(request):
             if not query:
                 error = True
             else:
-                q_res = q.search([lang], find_all, dangling, query, None)
+                q_res = q.search([lang], find_all, dangling, query, ctry)
                 place_names, postcode_names, places = _merge_results(q_res)
                 if (not place_names and not postcode_names) or not places:
-                    return _rtr(request, 'index.html', {'no_result': True, 'q': query, 'form': form})
+                    return _rtr(request, 'index.html', {'no_result': True, 'q': query, 'form': form, 'user_lat_lng': user_lat_lng})
                 else:
-                    return _rtr(request, 'index.html', {'place_names': place_names, 'postcode_names': postcode_names, 'form': form})
+                    return _rtr(request, 'index.html', {'place_names': place_names, 'postcode_names': postcode_names, 'form': form, 'user_lat_lng': user_lat_lng})
     else:
         form = IndexForm()
         
-    return _rtr(request, 'index.html', {'error': error, 'form': form})
+    return _rtr(request, 'index.html', {'error': error, 'form': form, 'user_lat_lng': user_lat_lng})
 
 @api_view(['POST'])
 @renderer_classes((JSONRenderer, XMLRenderer))
@@ -99,12 +105,8 @@ def get_location(request, query, format=None):
     This only retrieves locations that are stored in the cache.
     """
     t = request.DATA['type']
-    
-    try:
-        location = q.merged_location_cache[(int(query), t)]
-    except:
-        location = None
-        
+    location = cache.get(query+t)
+       
     if not location:
         return Response(dict(error="True", query=query))
     
@@ -182,8 +184,29 @@ def _merge_results(q_res, admin_levels=[]):
     
     # Cache locations in order to retrieve them easily onclick.
     for p in places:
-        q.merged_location_cache[(p.id, p.__class__.__name__)] = p.location
+        cache.set(str(p.id)+p.__class__.__name__, p.location, 9999)
         
 
             
     return place_names, postcode_names, places
+
+def _get_client_ip(request):
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0]
+    else:
+        ip = request.META.get('REMOTE_ADDR')
+    return ip
+
+def _get_coor_and_country(ip):
+    geodata = geoip.record_by_addr(ip)
+    if geodata:
+        user_lat_lng = [geodata['latitude'], geodata['longitude']]
+        try:
+            country = Country.objects.get(iso3166_2=geodata['country_code'])
+        except:
+            country = None
+    else:
+        user_lat_lng = [49.5981299, 6.1308834]  # lets default to luxembourg because we can!
+        country = None
+    return user_lat_lng, country

@@ -411,7 +411,6 @@ def _hash_wd(s):
 
 
 def _hash_list(sL):
-    print(sL)
     return hashlib.md5(" ".join(sL).encode('UTF-8')).hexdigest()
 
 

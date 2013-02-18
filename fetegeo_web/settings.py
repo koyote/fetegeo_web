@@ -146,11 +146,4 @@ LOGGING = {
     }
 }
 
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-        'LOCATION': 'unique-snowflake'
-    }
-}
-MEDIA_ROOT = ''
-MEDIA_URL = ''
+CACHE_BACKEND = 'file:///var/tmp/django_cache'

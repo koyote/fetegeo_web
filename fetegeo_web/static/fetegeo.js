@@ -1,7 +1,7 @@
 var map, marker, polyline, polygon, result = {};
-function initialize() {
+function initialize(lat_ng) {
 	var mapOptions = {
-		center : new google.maps.LatLng(49.5981299, 6.1308834),
+		center : new google.maps.LatLng(lat_ng[0], lat_ng[1]),
 		zoom : 8,
 		mapTypeId : google.maps.MapTypeId.ROADMAP
 	};
