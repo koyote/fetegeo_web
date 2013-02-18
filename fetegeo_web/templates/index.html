@@ -13,10 +13,10 @@
 				font-family: 'Ubuntu';
 			}
 			#map {
-				width: 45%;
+				width: 44%;
 				height: 75%;
 				float: right;
-				margin-left: 52%;
+				margin-left: 54%;
 				position: absolute;
 			}
 			.linkOFF span {
@@ -30,17 +30,27 @@
 			#left {
 				margin-left: 2%;
 				width: 52%;
-				float: left;
+				float: left
 			}
 			.results {
 				margin-top: 1em;
+				padding-left: 4%;
+			}
+			h2 {
+				padding-left: 1%;
+			}
+			h3 {
+				padding-left: 2%;
 			}
 			.searchForm {
 				margin-bottom: 5%;
+				padding-left: 2%;
 			}
 			h1 {
 				margin-left: 2%;
+				margin-right: 2%;
 				background-color: #132033;
+				padding-left: 0.5%;
 			}
 
 		</style>
@@ -54,7 +64,6 @@
 					zoom : 8,
 					mapTypeId : google.maps.MapTypeId.ROADMAP
 				};
-				console.log(document.getElementById('map'));
 				map = new google.maps.Map(document.getElementById('map'), mapOptions);
 			}
 
@@ -167,6 +176,7 @@
 		<div id=map></div>
 
 		<div id=left>
+			<h2>Search</h2>
 			<form action="" method="post" class="searchForm">
 				{% csrf_token %}
 				{{ form.as_p }}
@@ -174,35 +184,42 @@
 			</form>
 
 			{% if error %}
-			Bad query!
-			{% endif %}
+			<strong>Bad query!</strong>
+			{% else %}
+			
+			{% if no_result %}
+			<strong>No Results for '<em style="color:#687F80">{{q}}</em>' :(</strong>
+			{% else %}
 
-			{%if no_result %}
-			No Results for {{q}} :(
-			{% endif %}
+			<div id=results>
+				<h2>Results</h2>
+				{% if place_names %}
+				<div id=place_results >
+					<h3>Places</h3>
 
-			{% if place_names %}
-			<h2>Places</h2>
-			<div id=place_results >
-				{% for id, name in place_names.items %}
-				<div id={{id}} class='results linkOFF' type='Place'>
-					<span>{{name}}</span>
+					{% for id, name in place_names.items %}
+					<div id={{id}} class='results linkOFF' type='Place'>
+						<span>{{name}}</span>
+					</div>
+					{% endfor %}
 				</div>
-				{% endfor %}
-			</div>
-			{% endif %}
+				{% endif %}
 
-			{% if postcode_names %}
-			<h2>Postcodes</h2>
-			<div id=postcode_results>
-				{% for id, name in postcode_names.items %}
-				<div id={{id}} class='results linkOFF' type='Postcode'>
-					<span>{{name}}</span>
+				{% if postcode_names %}
+
+				<div id=postcode_results>
+					<h3>Postcodes</h3>
+					
+					{% for id, name in postcode_names.items %}
+					<div id={{id}} class='results linkOFF' type='Postcode'>
+						<span>{{name}}</span>
+					</div>
+					{% endfor %}
 				</div>
-				{% endfor %}
-			</div>
-			{% endif %}
+				{% endif %}
 
+			</div>
+			{% endif %}{% endif %}
 		</div>
 	</body>
 </html>
