@@ -1,181 +1,22 @@
 <!DOCTYPE html>
-{% load staticfiles %}
+{% load static %}
+{% get_static_prefix as STATIC_PREFIX %}
 <html>
 	<head>
 		<link href='http://fonts.googleapis.com/css?family=Ubuntu' rel='stylesheet' type='text/css'>
-		<title>Fetegeo Webview</title>
-		<style>
-			html, body {
-				margin: 0;
-				padding: 0;
-				background-color: #020203;
-				color: #687F9C;
-				font-family: 'Ubuntu';
-			}
-			#map {
-				width: 44%;
-				height: 75%;
-				float: right;
-				margin-left: 54%;
-				position: absolute;
-			}
-			.linkOFF span {
-				color: #687F9C;
-			}
-			.linkON span {
-				color: #132033;
-				background-color: #697E9C;
-				cursor: pointer;
-			}
-			#left {
-				margin-left: 2%;
-				width: 52%;
-				float: left
-			}
-			.results {
-				margin-top: 1em;
-				padding-left: 4%;
-			}
-			h2 {
-				padding-left: 1%;
-			}
-			h3 {
-				padding-left: 2%;
-			}
-			.searchForm {
-				margin-bottom: 5%;
-				padding-left: 2%;
-			}
-			h1 {
-				margin-left: 2%;
-				margin-right: 2%;
-				background-color: #132033;
-				padding-left: 0.5%;
-			}
-
-		</style>
+		<link href="{{ STATIC_PREFIX }}style.css" rel="stylesheet" type="text/css" />
+		
 		<script src="http://maps.google.com/maps/api/js?sensor=false"></script>
 		<script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
-		<script>
-			var map, marker, polyline, polygon, result = {};
-			function initialize() {
-				var mapOptions = {
-					center : new google.maps.LatLng(49.5981299, 6.1308834),
-					zoom : 8,
-					mapTypeId : google.maps.MapTypeId.ROADMAP
-				};
-				map = new google.maps.Map(document.getElementById('map'), mapOptions);
-			}
-
-			function getBounds(coorArray) {
-				var bounds = new google.maps.LatLngBounds();
-				for ( i = 0, len = coorArray.length; i < len; i++) {
-					bounds.extend(coorArray[i]);
-				}
-				return bounds;
-			}
-
-			function getResult(id, type) {
-				r = id + type;
-				// Cache key
-				if (!result[r]) {
-					$.ajax({
-						type : "POST",
-						url : "/api/loc/" + id + ".json",
-						data : {
-							'type' : type
-						},
-						async : false,
-						dataType : 'json'
-					}).done(function(data) {
-						if (!data["Error"]) {
-							result[r] = {
-								lat : data["x"],
-								lng : data["y"],
-								type : data["type"],
-								centerLat : data["centroidX"],
-								centerLng : data["centroidY"]
-							};
-						}
-					});
-				}
-				return result[r];
-			};
-
-			function populateMap(result) {
-				var coorArray = [];
-				for ( i = 0; i < result.lat.length; i++) {
-					coorArray[i] = new google.maps.LatLng(result.lat[i], result.lng[i]);
-				}
-				switch (result.type) {
-					case 'Point':
-						var coor = new google.maps.LatLng(result.lat, result.lng);
-						if (marker)
-							marker.setMap();
-						marker = new google.maps.Marker({
-							map : map,
-							position : coor
-						});
-						map.setZoom(15);
-						break;
-					case 'LineString':
-					case 'MultiLineString':
-						if (polyline)
-							polyline.setMap();
-						polyline = new google.maps.Polyline({
-							path : coorArray,
-							strokeColor : '#FF0000',
-							strokeOpacity : 1.0,
-							strokeWeight : 2,
-							map : map
-						});
-						map.fitBounds(getBounds(coorArray));
-						break;
-					case 'Polygon':
-					case 'MultiPolygon':
-						if (polygon)
-							polygon.setMap();
-						polygon = new google.maps.Polygon({
-							paths : coorArray,
-							strokeColor : '#FF0000',
-							strokeOpacity : '1.0',
-							strokeWeight : 2,
-							fillColor : '#FF0000',
-							fillOpacity : 0.35,
-							map : map
-						});
-						map.fitBounds(getBounds(coorArray));
-						break;
-				}
-				center = new google.maps.LatLng(result.centerLat, result.centerLng);
-				map.panTo(center);
-			}
-
-
-			$(document).ready(function() {
-				function resultOnclick() {
-					$('div[class^=results]').each(function() {
-						$(this).click(function() {
-							var result = getResult(this.id, $(this).attr('type'));
-							populateMap(result);
-						}).hover(function() {
-							this.className = this.className.replace('OFF', 'ON');
-						}, function() {
-							this.className = this.className.replace('ON', 'OFF');
-						});
-					})
-				}
-
-				resultOnclick();
-			});
-
-		</script>
+		<script src="{{ STATIC_PREFIX }}fetegeo.js"></script>
+		
+		<title>Fetegeo Webview</title>
 	</head>
 	<body onload='initialize()'>
 		<h1>Fetegeo Webview</h1>
-		<div id=map></div>
+		<div id='map'></div>
 
-		<div id=left>
+		<div id='left'>
 			<h2>Search</h2>
 			<form action="" method="post" class="searchForm">
 				{% csrf_token %}
@@ -185,20 +26,19 @@
 
 			{% if error %}
 			<strong>Bad query!</strong>
-			{% else %}
-			
-			{% if no_result %}
-			<strong>No Results for '<em style="color:#687F80">{{q}}</em>' :(</strong>
-			{% else %}
 
-			<div id=results>
+			{% elif no_result %}
+			<strong>No Results for '<em style="color:#687F80">{{q}}</em>' :(</strong>
+			{% elif place_names or postcode_names %}
+
+			<div id='results'>
 				<h2>Results</h2>
 				{% if place_names %}
-				<div id=place_results >
+				<div id='place_results'>
 					<h3>Places</h3>
 
 					{% for id, name in place_names.items %}
-					<div id={{id}} class='results linkOFF' type='Place'>
+					<div id='{{id}}' class='results linkOFF' name='Place'>
 						<span>{{name}}</span>
 					</div>
 					{% endfor %}
@@ -209,9 +49,9 @@
 
 				<div id=postcode_results>
 					<h3>Postcodes</h3>
-					
+
 					{% for id, name in postcode_names.items %}
-					<div id={{id}} class='results linkOFF' type='Postcode'>
+					<div id='{{id}}' class='results linkOFF' name='Postcode'>
 						<span>{{name}}</span>
 					</div>
 					{% endfor %}
@@ -219,7 +59,7 @@
 				{% endif %}
 
 			</div>
-			{% endif %}{% endif %}
+			{% endif %}
 		</div>
 	</body>
 </html>

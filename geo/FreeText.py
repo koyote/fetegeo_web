@@ -19,6 +19,8 @@
 # IN THE SOFTWARE.
 
 from place.models import PlaceName, Country, Postcode, Lang, get_type
+from django.contrib.gis.db.models import Q
+from unidecode import unidecode
 import hashlib
 import re
 from geo import Results
@@ -202,12 +204,13 @@ class FreeText:
 
         # Finally try and match a full country name. Note that we're agnostic over the language used to
         # specify the country name.
-
-        country_list = PlaceName.objects.filter(type=get_type("country"), name_hash=_hash_wd(self.split[-1]))
+        hashed_token = _hash_wd(self.split[-1])
+        hashed_norm = _hash_wd(unidecode(self.split[-1]))
+        country_list = PlaceName.objects.filter(Q(name_hash=hashed_token) | Q(name_hash=hashed_norm), Q(type=get_type("country")))
 
         done = set()
         for cnd in country_list.all():
-            new_i = _match_end_split(self.split, len(self.split) - 1, cnd.name)
+            new_i = _match_end_split([unidecode(x) for x in self.split], len(self.split) - 1, unidecode(cnd.name))
             country = cnd.place.country
             done_key = (country, new_i)
             if done_key in done:
@@ -224,15 +227,18 @@ class FreeText:
     def _iter_places(self, i, country, parent_places=[], postcode=None):
 
         for j in range(0, i + 1):
+            # We will create two hashes, one of the string as it is, and the other of a 'normalised' version of the string.
+            # The normalised version will have no accents. The database contains hashes of the normalised version for all roman alphabet-based names.
             sub_hash = _hash_list(self.split[j:i + 1])
+            norm_hash = _hash_list([unidecode(x) for x in self.split[j:i + 1]])
             cache_key = (country, sub_hash)
             if self.queryier.place_cache.has_key(cache_key):
                 place_names = self.queryier.place_cache[cache_key]
             else:
                 if country is not None:
-                    place_names = PlaceName.objects.filter(name_hash=sub_hash, place__country=country).distinct('place', 'name')
+                    place_names = PlaceName.objects.filter(Q(name_hash=sub_hash) | Q(name_hash=norm_hash), place__country=country).distinct('place', 'name')
                 else:
-                    place_names = PlaceName.objects.filter(name_hash=sub_hash).distinct('place', 'name')
+                    place_names = PlaceName.objects.filter(Q(name_hash=sub_hash) | Q(name_hash=norm_hash)).distinct('place', 'name')
      
                 self.queryier.place_cache[cache_key] = place_names
 
@@ -254,7 +260,7 @@ class FreeText:
                 if len(parent_places) > 0 and not self._find_parent(parent_places[0], p.place):
                     continue
 
-                new_i = _match_end_split(self.split, i, p.name)
+                new_i = _match_end_split([unidecode(x) for x in self.split], i, unidecode(p.name))
                 assert new_i < i
                 new_parent_places = [p.place] + parent_places
                 record_match = False
@@ -405,6 +411,7 @@ def _hash_wd(s):
 
 
 def _hash_list(sL):
+    print(sL)
     return hashlib.md5(" ".join(sL).encode('UTF-8')).hexdigest()
 
 

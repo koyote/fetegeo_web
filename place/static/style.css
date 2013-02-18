@@ -1,0 +1,47 @@
+html, body {
+	margin: 0;
+	padding: 0;
+	background-color: #020203;
+	color: #687F9C;
+	font-family: 'Ubuntu';
+}
+#map {
+	width: 44%;
+	height: 75%;
+	float: right;
+	margin-left: 54%;
+	position: absolute;
+}
+.linkOFF span {
+	color: #687F9C;
+}
+.linkON span {
+	color: #132033;
+	background-color: #697E9C;
+	cursor: pointer;
+}
+#left {
+	margin-left: 2%;
+	width: 52%;
+	float: left
+}
+.results {
+	margin-top: 1em;
+	padding-left: 4%;
+}
+h2 {
+	padding-left: 1%;
+}
+h3 {
+	padding-left: 2%;
+}
+.searchForm {
+	margin-bottom: 5%;
+	padding-left: 2%;
+}
+h1 {
+	margin-left: 2%;
+	margin-right: 2%;
+	background-color: #132033;
+	padding-left: 0.5%;
+}
