@@ -6,11 +6,15 @@ html, body {
 	font-family: 'Ubuntu';
 }
 #map {
-	width: 44%;
+	width: 43%;
 	height: 75%;
-	float: right;
-	margin-left: 54%;
+	margin-left: 55%;
 	position: absolute;
+}
+#left {
+	margin-left: 2%;
+	width: 52%;
+	float: left
 }
 .linkOFF span {
 	color: #687F9C;
@@ -20,17 +24,13 @@ html, body {
 	background-color: #697E9C;
 	cursor: pointer;
 }
-#left {
-	margin-left: 2%;
-	width: 52%;
-	float: left
-}
 .results {
 	margin-top: 1em;
 	padding-left: 4%;
 }
 h2 {
-	padding-left: 1%;
+	padding-left: 2%;
+	margin-top: 0%;
 }
 h3 {
 	padding-left: 2%;
@@ -43,5 +43,21 @@ h1 {
 	margin-left: 2%;
 	margin-right: 2%;
 	background-color: #132033;
-	padding-left: 0.5%;
+	padding-left: 10px;
+}
+h6 {
+	clear: both;
+	text-align: right;
+	margin-top: 0%;
+	margin-right: 2%;
+}
+h6 > a {
+	color: inherit;
+	text-decoration: none;
+}
+hr {
+	margin-left: 2%;
+	margin-right: 2%;
+	border-color: #132033;
+	margin-top: 39%;
 }

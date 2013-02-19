@@ -13,53 +13,56 @@
 		<title>Fetegeo Webview</title>
 	</head>
 	<body onload='initialize({{user_lat_lng}})'>
-		<h1>Fetegeo Webview</h1>
-		<div id='map'></div>
+		<div id='top'>
+			<h1>Fetegeo Webview</h1>
+			<div id='left'>
+				<h2>Search</h2>
+				<form action="" method="post" class="searchForm">
+					{% csrf_token %}
+					{{ form.as_p }}
+					<input id="searchButton" type="submit" value='Search' />
+				</form>
 
-		<div id='left'>
-			<h2>Search</h2>
-			<form action="" method="post" class="searchForm">
-				{% csrf_token %}
-				{{ form.as_p }}
-				<input id="searchButton" type="submit" value='Search' />
-			</form>
+				{% if error %}
+				<strong>Bad query!</strong>
 
-			{% if error %}
-			<strong>Bad query!</strong>
+				{% elif no_result %}
+				<strong>No Results for '<em style="color:#687F80">{{q}}</em>' :(</strong>
+				{% elif place_names or postcode_names %}
 
-			{% elif no_result %}
-			<strong>No Results for '<em style="color:#687F80">{{q}}</em>' :(</strong>
-			{% elif place_names or postcode_names %}
+				<div id='results'>
+					<h2>Results</h2>
+					{% if place_names %}
+					<div id='place_results'>
+						<h3>Places</h3>
 
-			<div id='results'>
-				<h2>Results</h2>
-				{% if place_names %}
-				<div id='place_results'>
-					<h3>Places</h3>
-
-					{% for id, name in place_names.items %}
-					<div id='{{id}}' class='results linkOFF' name='Place'>
-						<span>{{name}}</span>
+						{% for id, name in place_names.items %}
+						<div id='{{id}}' class='results linkOFF' name='Place'>
+							<span>{{name}}</span>
+						</div>
+						{% endfor %}
 					</div>
-					{% endfor %}
+					{% endif %}
+
+					{% if postcode_names %}
+
+					<div id=postcode_results>
+						<h3>Postcodes</h3>
+
+						{% for id, name in postcode_names.items %}
+						<div id='{{id}}' class='results linkOFF' name='Postcode'>
+							<span>{{name}}</span>
+						</div>
+						{% endfor %}
+					</div>
+					{% endif %}
+
 				</div>
 				{% endif %}
-
-				{% if postcode_names %}
-
-				<div id=postcode_results>
-					<h3>Postcodes</h3>
-
-					{% for id, name in postcode_names.items %}
-					<div id='{{id}}' class='results linkOFF' name='Postcode'>
-						<span>{{name}}</span>
-					</div>
-					{% endfor %}
-				</div>
-				{% endif %}
-
 			</div>
-			{% endif %}
+			<div id='map'></div>
 		</div>
+		<hr />
+		<h6>© 2013 - <a href="https://github.com/koyote">Pit Apps</a></h6>
 	</body>
 </html>
