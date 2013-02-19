@@ -5,8 +5,7 @@ import os
 import time
 import subprocess
 import shlex
-import getopt
-import sys
+import argparse
 management.setup_environ(settings)
 from django.db import connection
 
@@ -65,20 +64,14 @@ def _vacuum_analyze(cursor):
     connection.connection.set_isolation_level(old_iso_level)
     
 if __name__ == "__main__":
-    try:
-        opts, args = getopt.getopt(sys.argv[1:], 'f:')
-    except getopt.error as e:
-        print(str(e))
-        
-    osm_file = ''    
-    for opt, arg in opts:
-        if opt == '-f':
-            osm_file = arg
-    
-    if not osm_file:
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-f', '--osm-file', type=str, help='Specify an OSM to process with osmosis.')
+    args = parser.parse_args()
+       
+    if not args.osm_file:
         print("No OSM file mentioned. Add one with the -f command.")
     else:
-        osmosis_command = shlex.split('osmosis --fast-read-xml file="' + osm_file + '" --fimp outdir=' + _IMPORT_DIR)
+        osmosis_command = shlex.split('osmosis --fast-read-xml file="' + args.osm_file + '" --fimp outdir=' + _IMPORT_DIR)
         subprocess.check_output(osmosis_command)
 
     with Timer():
