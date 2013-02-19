@@ -18,8 +18,7 @@ geoip = pygeoip.GeoIP(os.path.join(os.path.dirname(__file__), 'geoip/GeoLiteCity
     
 def index(request):
     error = False
-    ip = _get_client_ip(request)
-    user_lat_lng, ctry = _get_coor_and_country(ip)
+    user_lat_lng, ctry = _get_coor_and_country(request)
     
     if request.method == 'POST':
         form = IndexForm(request.POST)
@@ -57,12 +56,14 @@ def geo(request, query, format=None):
     find_all = ast.literal_eval(request.DATA['find_all'])
     show_all = ast.literal_eval(request.DATA['show_all'])
     lang_str = request.DATA['langs']
+    
     langs = _find_langs(lang_str)
+    _, ctry = _get_coor_and_country(request)
     
     if not langs:
         langs = [_DEFAULT_LANG]
 
-    q_res = q.search(langs, find_all, dangling, query, None)
+    q_res = q.search(langs, find_all, dangling, query, ctry)
         
     if not q_res:
         return Response(dict(error="True", query=query))
@@ -197,7 +198,8 @@ def _get_client_ip(request):
         ip = request.META.get('REMOTE_ADDR')
     return ip
 
-def _get_coor_and_country(ip):
+def _get_coor_and_country(request):
+    ip = _get_client_ip(request)
     geodata = geoip.record_by_addr(ip)
     if geodata:
         user_lat_lng = [geodata['latitude'], geodata['longitude']]

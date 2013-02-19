@@ -21,128 +21,75 @@
 # IN THE SOFTWARE.
 
 
-import getopt
+from urllib.parse import urlencode, quote
+import argparse
 import httplib2
 import json
 import sys
 import textwrap
-from urllib.parse import urlencode, quote
 
 
 _VERSION = "0.3"
 
 _DEFAULT_HOST = "127.0.0.1"
-_DEFAULT_PORT = 8000
-_DEFAULT_LANG = "EN"  # English
+_DEFAULT_PORT = 8001
+_DEFAULT_LANG = ["EN"]  # English
 
-_Q_GEO = 0
-_Q_CTRY = 1
-
-_SHORT_USAGE_MSG = ("Usage:\n"
-                    "  * fetegeoc [-l <lang>] [-s <host>] [-p <port>] country <query string>\n"
-                    "  * fetegeoc [-a] [--sa] [-c <country>] [-s <host>] [-p <port>] [-l <lang>]\n"
-                    "    geo <query string>\n"
-    )
-
-_LONG_USAGE_MSG = _SHORT_USAGE_MSG + ("\n"
-                                      "  -a   If -c is specified, find all matches, not just those in the host\n"
-                                      "       country.\n"
-                                      "\n"
-                                      "  -c   Bias the search to the specified country (specified as an ISO2 or ISO3\n"
-                                      "       code).\n"
-                                      "\n"
-                                      "  -l   Specify the preferred language(s) for results to be returned in.\n"
-                                      "       Multiple -l options can be specified; they will be treated in descending\n"
-                                      "       order of preference.\n"
-                                      "\n"
-                                      "  --sa If enabled it will print out the whole area as opposed to only the centroid.\n"
-    )
+_DESCRIPTION = 'Fetegeo Geocoder ' + _VERSION
+_QUERY_HELP = 'An address or part of an address you want to conduct a search on.'
+_A_HELP = 'Find only matches in the host country.'
+_L_HELP = 'Specify the preferred language(s) for results to be returned in. Multiple -l options can be specified; they will be treated in descending order of preference.'
+_SA_HELP = 'If enabled it will print out the whole area as opposed to only the centroid.'
+_D_HELP = 'If enabled the search will discard the left parts of the query that did not match.'
 
 
 class Fetegeoc:
+    
+    
     def __init__(self):
-        self._parse_args()
-
         self._conn = httplib2.Http('.cache')
-
-        if self._q_type == _Q_GEO:
-            self._q_geo()
-        elif self._q_type == _Q_CTRY:
-            self._q_ctry()
+        self._parse_args()
 
 
     def _parse_args(self):
-        try:
-            opts, args = getopt.getopt(sys.argv[1:], 'ac:dhl:s:p:', ["show-area", "sa"])
-        except getopt.error as e:
-            self._usage(str(e), code=1)
+        # Main Parser
+        parser = argparse.ArgumentParser(description=_DESCRIPTION, prog='Fetegeo')
+        parser.add_argument('--version', action='version', version='%(prog)s ' + _VERSION)
+        parser.add_argument('-s', '--host', type=str, help='Host', default=_DEFAULT_HOST)
+        parser.add_argument('-p', '--port', type=str, help='Port', default=_DEFAULT_PORT)
+        parser.add_argument('-l', '--lang', action='append', help=_L_HELP)
+        subparsers = parser.add_subparsers()       
+        
+        # Query parser used as parent by subparsers
+        query_parser = argparse.ArgumentParser(add_help=False)
+        query_parser.add_argument('qs', metavar='Query', nargs='+', help=_QUERY_HELP)
+        
+        # Parser for 'country'
+        parser_ctry = subparsers.add_parser('country', help='Country Query', parents=[query_parser])
+        parser_ctry.set_defaults(func=self._q_ctry)
 
-        self._find_all = False
-        self._country = None
-        self._allow_dangling = False
-        self._show_area = False
-        self._host = _DEFAULT_HOST
-        self._port = _DEFAULT_PORT
-        self._langs = []
-        for opt, arg in opts:
-            if opt == "-a":
-                self._find_all = True
-            elif opt == "-c":
-                if self._country is not None:
-                    self._usage("Only one -c argument can be specified.")
-                self._country = arg
-            elif opt == "-d":
-                self._allow_dangling = True
-            elif opt in ("--sa", "--show-area"):
-                self._show_area = True
-            elif opt == "-h":
-                self._usage(long_help=True)
-            elif opt == "-v":
-                print(_VERSION)
-                sys.exit(0)
-            elif opt == "-l":
-                self._langs.append(arg)
-            elif opt == "-s":
-                self._host = arg
-            elif opt == "-p":
-                try:
-                    self._port = int(arg)
-                except ValueError:
-                    self._usage("Invalid port number '{0}'.".format(arg))
-
-        if self._find_all and self._country is None:
-            self._usage("-a makes no sense without -c.")
-
-        if len(self._langs) == 0:
-            self._langs.append(_DEFAULT_LANG)
-
-        if len(args) < 2:
-            self._usage("Not enough arguments.")
-        self._q_str = " ".join(args[1:])
-
-        if args[0] == "geo":
-            self._q_type = _Q_GEO
-        elif args[0] == "country":
-            self._q_type = _Q_CTRY
-        else:
-            self._usage("Unknown query type '{0}'.".format(args[0]))
-
-
-    def _usage(self, error_msg="", code=0, long_help=False):
-        if error_msg != "":
-            sys.stderr.write("Error: {0}\n".format(error_msg))
-
-        if long_help:
-            sys.stderr.write(_LONG_USAGE_MSG)
-        else:
-            sys.stderr.write(_SHORT_USAGE_MSG)
-        sys.exit(code)
+        # Parser for 'geo'
+        parser_geo = subparsers.add_parser('geo', help='Geo Query', parents=[query_parser])
+        parser_geo.add_argument('-a', '--find-all', action='store_false', help=_A_HELP)
+        parser_geo.add_argument('--fl', '--full-location', action='store_true', help=_SA_HELP)
+        parser_geo.add_argument('-d', '--allow-dangling', action='store_true', help=_D_HELP)
+        parser_geo.set_defaults(func=self._q_geo)
+        
+        args = parser.parse_args()
+        if not args.lang:  # roundabout way for circumventing bug in argsparse that adds _DEFAULT_LANG to lang even when it's been set
+            args.lang = _DEFAULT_LANG
+        
+        try:  # it would be nice to know how to set subparsers to be required
+            args.func(args)
+        except AttributeError:
+            sys.stderr.write("Error: Please specify a query mode ('geo', 'country').\n\n")
+            print(parser.format_help())
     
     
     def _pp_geo(self, data):
         self._handle_error(data)
         
-        i = 0
+        i = 1
         for result in data:
             print("Match #{}".format(i))
             self._print_wrap("{0}: {1}\n".format("OSM ID", result["osm_id"]))
@@ -168,7 +115,7 @@ class Fetegeoc:
     def _print_wrap(self, text):
         print(textwrap.fill(text, initial_indent=' ', subsequent_indent='     '))
         
-    
+        
     def _handle_error(self, data):
         if 'error' in data:
             sys.stderr.write("No match found for {}.\n".format(data["query"]))
@@ -186,14 +133,12 @@ class Fetegeoc:
             sys.stderr.write("Unknown error\n")
             sys.exit(1) 
         
-    def _q_geo(self):
-
-
-        # if self._country is not None:
-        #    country = "<country>{0}</country>\n".format(self._country)
         
-        options = dict(find_all=self._find_all, dangling=self._allow_dangling, langs=self._langs, show_all=self._show_area)
-        url = 'http://{host}:{port}/api/geo/{query}.json'.format(host=self._host, port=self._port, query=quote(self._q_str))
+    def _q_geo(self, args):
+
+        query = quote(" ".join(args.qs))
+        options = dict(find_all=args.find_all, dangling=args.allow_dangling, langs=args.lang, show_all=args.fl)
+        url = 'http://{host}:{port}/api/geo/{query}.json'.format(host=args.host, port=args.port, query=query)
         response, content = self._conn.request(url, 'POST', urlencode(options), {'Content-type': 'application/x-www-form-urlencoded'})
 
         self._handle_status(response.status)
@@ -202,9 +147,10 @@ class Fetegeoc:
         self._pp_geo(data)
         
 
-    def _q_ctry(self):
-        options = dict(langs=self._langs)
-        url = 'http://{host}:{port}/api/ctry/{query}.json'.format(host=self._host, port=self._port, query=quote(self._q_str))
+    def _q_ctry(self, args):
+        query = quote(" ".join(args.qs))
+        options = dict(langs=args.lang)
+        url = 'http://{host}:{port}/api/ctry/{query}.json'.format(host=args.host, port=args.port, query=query)
         response, content = self._conn.request(url, 'POST', urlencode(options), {'Content-type': 'application/x-www-form-urlencoded'})
             
         self._handle_status(response.status)
@@ -214,3 +160,4 @@ class Fetegeoc:
 
 if __name__ == "__main__":
     Fetegeoc()
+
