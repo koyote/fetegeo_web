@@ -12,9 +12,11 @@ import ast
 import os
 import pygeoip
 
+
 _DEFAULT_LANG = Lang.objects.get(iso639_1='EN').id
 q = Queryier.Queryier()
 geoip = pygeoip.GeoIP(os.path.join(os.path.dirname(__file__), 'geoip/GeoLiteCity.dat').replace('\\', '/'), pygeoip.MEMORY_CACHE)
+    
     
 def index(request):
     error = False
@@ -44,6 +46,7 @@ def index(request):
         form = IndexForm()
         
     return _rtr(request, 'index.html', {'error': error, 'form': form, 'user_lat_lng': user_lat_lng})
+
 
 @api_view(['POST'])
 @renderer_classes((JSONRenderer, XMLRenderer))
@@ -127,12 +130,14 @@ def get_location(request, query, format=None):
 
 
 def _find_langs(lang_str):
+    """
+    Return Lang objects from a list of langs.
+    """
     langs = []
     for iso in ast.literal_eval(lang_str):
         try:
             langs.append(Lang.objects.filter(iso639_1__iexact=iso)[0].id)
         except:
-            print("Could not find " + iso)
             continue
     return langs
 
@@ -190,7 +195,11 @@ def _merge_results(q_res, admin_levels=[]):
             
     return place_names, postcode_names, places
 
+
 def _get_client_ip(request):
+    """
+    Return the client's ip address.
+    """
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
     if x_forwarded_for:
         ip = x_forwarded_for.split(',')[0]
@@ -198,7 +207,11 @@ def _get_client_ip(request):
         ip = request.META.get('REMOTE_ADDR')
     return ip
 
+
 def _get_coor_and_country(request):
+    """
+    Return a client's coordinates and country.
+    """
     ip = _get_client_ip(request)
     geodata = geoip.record_by_addr(ip)
     if geodata:
