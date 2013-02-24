@@ -5,59 +5,77 @@ html, body {
 	color: #687F9C;
 	font-family: 'Ubuntu';
 }
+
+h1 {
+	background-color: #132033;
+	padding-left: 1%;
+}
+
+h2 {
+	margin-top: 0%;
+}
+
+h6 {
+	text-align: right;
+	margin-top: 0.5%;
+}
+
+h6 > a {
+	color: inherit;
+	text-decoration: none;
+}
+
+hr {
+	border-color: #132033;
+}
+
 #map {
-	width: 43%;
-	height: 75%;
-	margin-left: 55%;
-	position: absolute;
+	height: 500px;
 }
-#left {
-	margin-left: 2%;
-	width: 52%;
-	float: left
-}
+
 .linkOFF span {
 	color: #687F9C;
 }
+
 .linkON span {
 	color: #132033;
 	background-color: #697E9C;
 	cursor: pointer;
 }
+
 .results {
 	margin-top: 1em;
-	padding-left: 4%;
-}
-h2 {
-	padding-left: 2%;
-	margin-top: 0%;
-}
-h3 {
 	padding-left: 2%;
 }
+
 .searchForm {
-	margin-bottom: 5%;
 	padding-left: 2%;
+	margin-bottom: 4%;
 }
-h1 {
-	margin-left: 2%;
-	margin-right: 2%;
-	background-color: #132033;
-	padding-left: 10px;
+
+.container {
+	width: 92%;
+	margin-left: 4%;
+	margin-right: 4%;
 }
-h6 {
+
+.grid {
+	display: inline;
+	float: left;
+	position: relative;
+	margin-left: 1%;
+	margin-right: 1%;
+}
+
+.container .grid {
+	width: 48.0%;
+}
+
+.clear {
 	clear: both;
-	text-align: right;
-	margin-top: 0%;
-	margin-right: 2%;
-}
-h6 > a {
-	color: inherit;
-	text-decoration: none;
-}
-hr {
-	margin-left: 2%;
-	margin-right: 2%;
-	border-color: #132033;
-	margin-top: 39%;
+	display: block;
+	overflow: hidden;
+	visibility: hidden;
+	width: 0;
+	height: 0;
 }

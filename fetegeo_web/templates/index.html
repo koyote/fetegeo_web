@@ -13,9 +13,10 @@
 		<title>Fetegeo Webview</title>
 	</head>
 	<body onload='initialize({{user_lat_lng}})'>
-		<div id='top'>
+		<div class='container'>
 			<h1>Fetegeo Webview</h1>
-			<div id='left'>
+
+			<div class='grid'>
 				<h2>Search</h2>
 				<form action="" method="post" class="searchForm">
 					{% csrf_token %}
@@ -60,9 +61,12 @@
 				</div>
 				{% endif %}
 			</div>
-			<div id='map'></div>
+			<div class='grid' id='map'></div>
+
+			<div class="clear"></div>
+
+			<hr />
+			<h6>© 2013 - <a href="https://github.com/koyote">Pit Apps</a></h6>
 		</div>
-		<hr />
-		<h6>© 2013 - <a href="https://github.com/koyote">Pit Apps</a></h6>
 	</body>
 </html>
