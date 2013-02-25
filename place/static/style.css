@@ -7,17 +7,20 @@ html, body {
 	height: 95%;
 }
 
-h1 {
+header {
 	background-color: #132033;
-	padding-left: 1%;
 }
 
-h2 {
+h1, h2, h3, h4, h5, h6 {
 	margin-top: 0%;
 }
 
+h1 {
+	padding-left: 2%;
+}
+
 h6 {
-	text-align: right;
+	text-align: center;
 	margin-top: 0.5%;
 }
 

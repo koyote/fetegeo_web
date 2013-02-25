@@ -13,8 +13,10 @@
 		<title>Fetegeo Webview</title>
 	</head>
 	<body onload='initialize({{user_lat_lng}})'>
-		<div class='container'>
+		<header>
 			<h1>Fetegeo Webview</h1>
+		</header>
+		<div class='container'>
 
 			<div class='grid'>
 				<h2>Search</h2>
@@ -29,7 +31,7 @@
 
 				{% elif no_result %}
 				<strong>No Results for '<em style="color:#687F80">{{q}}</em>' :(</strong>
-				
+
 				{% elif place_names or postcode_names %}
 				<h2>Results</h2>
 
@@ -61,10 +63,11 @@
 
 			<div class='grid' id='map'></div>
 			<div class="clear"></div>
-
+		</div>
+		<footer>
 			<hr />
 			<h6>© 2013 - <a href="https://github.com/koyote">Pit Apps</a></h6>
-		</div>
+		</footer>
 
 		<script src="http://maps.google.com/maps/api/js?sensor=false"></script>
 		<script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>

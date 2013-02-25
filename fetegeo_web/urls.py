@@ -1,7 +1,7 @@
 from django.conf.urls import patterns, url
 from rest_framework.urlpatterns import format_suffix_patterns
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
-
+from django.http import HttpResponse
 
 urlpatterns = patterns('place.views',
      url(r'^api/geo/(?P<query>.+)$', 'geo'),
@@ -13,6 +13,7 @@ urlpatterns = format_suffix_patterns(urlpatterns, allowed=['json', 'xml'], suffi
 
 urlpatterns += patterns('place.views',
      (r'$^', 'index'),
+     (r'^robots\.txt$', lambda r: HttpResponse("User-agent: *\nDisallow: ", mimetype="text/plain")),
 )
 
 urlpatterns += staticfiles_urlpatterns()
