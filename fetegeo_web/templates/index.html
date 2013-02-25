@@ -29,37 +29,34 @@
 
 				{% elif no_result %}
 				<strong>No Results for '<em style="color:#687F80">{{q}}</em>' :(</strong>
+				
 				{% elif place_names or postcode_names %}
+				<h2>Results</h2>
 
-				<div id='results'>
-					<h2>Results</h2>
-					{% if place_names %}
-					<div id='place_results'>
-						<h3>Places</h3>
-
-						{% for id, name in place_names.items %}
-						<div id='{{id}}' class='results linkOFF' name='Place'>
-							<span>{{name}}</span>
-						</div>
-						{% endfor %}
+				{% if place_names %}
+				<h3>Places</h3>
+				<div class='result_list'>
+					{% for id, name in place_names.items %}
+					<div id='{{id}}' class='results linkOFF' name='Place'>
+						<span>{{name}}</span>
 					</div>
-					{% endif %}
-
-					{% if postcode_names %}
-
-					<div id=postcode_results>
-						<h3>Postcodes</h3>
-
-						{% for id, name in postcode_names.items %}
-						<div id='{{id}}' class='results linkOFF' name='Postcode'>
-							<span>{{name}}</span>
-						</div>
-						{% endfor %}
-					</div>
-					{% endif %}
-
+					{% endfor %}
 				</div>
 				{% endif %}
+
+				{% if postcode_names %}
+				<h3>Postcodes</h3>
+				<div class='result_list'>
+					{% for id, name in postcode_names.items %}
+					<div id='{{id}}' class='results linkOFF' name='Postcode'>
+						<span>{{name}}</span>
+					</div>
+					{% endfor %}
+				</div>
+				{% endif %}
+
+				{% endif %}
+
 			</div>
 
 			<div class='grid' id='map'></div>
