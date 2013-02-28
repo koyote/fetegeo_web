@@ -1,5 +1,7 @@
 from django.contrib.gis.db import models
 from django.contrib.gis.db.models import Q
+
+type_ids = {}
   
 class Type(models.Model):
     name = models.TextField()
@@ -113,12 +115,12 @@ class PlaceName(models.Model):
 # Helper functions
 
 def get_country_name_lang(query, langs):
-    country = PlaceName.objects.filter(type=get_type('country'), name__iexact=query, lang__in=langs)  # TODO: Why no results?
-    if country.count() == 0:
-        country = PlaceName.objects.filter(type=get_type('country'), name__iexact=query)
-        if country.count() == 0:
+    country = PlaceName.objects.filter(type__id=get_type_id('country'), name__iexact=query, lang__in=langs)  # TODO: Why no results?
+    if country is not None:
+        country = PlaceName.objects.filter(type__id=get_type_id('country'), name__iexact=query)
+        if country is not None:
             country = Country.objects.filter(Q(iso3166_2__iexact=query) | Q(iso3166_3__iexact=query))
-    if country.count() == 0 :
+    if country is not None:
         return None, None
     
     try:
@@ -126,22 +128,21 @@ def get_country_name_lang(query, langs):
     except AttributeError:
         return country[0].name, None
 
-def get_type(type_name):
-    return Type.objects.get(name=type_name)
+def get_type_id(type_name):
+    if type_name not in type_ids:
+        type_ids[type_name] = Type.objects.get(name=type_name).id
+    return type_ids[type_name]
 
 def get_place_name(place, langs):
-
-    if place is None or place.placename_set is None:
-        return []
-    
+        
     result = place.placename_set.filter(lang__in=langs)
     
-    if result.count() == 0:
+    if result is not None:
         # Often the default name has no language set
         # We specify 'name' as a type because sometimes we might have two names of lang null, one being a prefix p.ex
-        result = place.placename_set.filter(lang__isnull=True, type=get_type('name'))
+        result = place.placename_set.filter(lang__isnull=True, type__id=get_type_id('name'))
         
-        if result.count() == 0:
+        if result is not None:
             result = place.placename_set.all()  # Any old language will have to do
         
     return result[0].name

@@ -11,12 +11,11 @@ from rest_framework.response import Response
 import ast
 import os
 import pygeoip
-
+from timer import Timer
 
 _DEFAULT_LANG = Lang.objects.get(iso639_1='EN').id
 q = Queryier.Queryier()
 geoip = pygeoip.GeoIP(os.path.join(os.path.dirname(__file__), 'geoip/GeoLiteCity.dat').replace('\\', '/'), pygeoip.MEMORY_CACHE)
-    
     
 def index(request):
     error = False
@@ -36,7 +35,8 @@ def index(request):
             if not query:
                 error = True
             else:
-                q_res = q.search([lang], find_all, dangling, query, ctry)
+                with Timer('search'):
+                    q_res = q.search([lang], find_all, dangling, query, ctry)
                 place_names, postcode_names, places = _merge_results(q_res)
                 if (not place_names and not postcode_names) or not places:
                     return _rtr(request, 'index.html', {'no_result': True, 'q': query, 'form': form, 'user_lat_lng': user_lat_lng})

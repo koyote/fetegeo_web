@@ -20,14 +20,7 @@
 
 
 from geo import Temp_Cache, FreeText
-from place.models import get_place_name, Place
-
-# Here we set a custom set of parents to be added to the pretty print.
-# http://wiki.openstreetmap.org/wiki/Tag:boundary%3Dadministrative might help choosing which levels we need for
-# each country.
-_ADMIN_LEVELS = {"LU": (2, 6, 8), "GB": (2, 4, 6, 8)}
-_DEFAULT_LEVEL = (2, 4, 6, 8)
-
+from place.models import get_place_name
 
 class Queryier:
     def __init__(self):
@@ -48,27 +41,22 @@ class Queryier:
         self.parent_cache = Temp_Cache.Cached_Dict(Temp_Cache.LARGE_CACHE_SIZE)
         self.results_cache = Temp_Cache.Cached_Dict(Temp_Cache.SMALL_CACHE_SIZE)
         self.merged_location_cache = Temp_Cache.Cached_Dict(Temp_Cache.LARGE_CACHE_SIZE)
-
+                
     def pp_place(self, place):
         langs = self.ft.langs
-        cache_key = (tuple(langs), self.ft.host_country, place)
+        cache_key = (tuple(langs), place)
         if self.place_pp_cache.has_key(cache_key):
             return self.place_pp_cache[cache_key]
         
         # We save each place name with its admin level (10 to 1).
         # If no admin level is found we'll just use one that is one less than the last.
-        al = place.admin_level or 10
-        pp = {al:get_place_name(place, langs)}
-        parent = place.parent
+        al = 11
+        pp = {}
         
-        while parent is not None:
-            p = Place.objects.get(id=parent.id)
-            assert(p.parent != parent)
-
-            al = p.admin_level or al - 1
-            pp[al] = get_place_name(parent, langs)
-
-            parent = p.parent
+        while place is not None:
+            al = place.admin_level or al - 1
+            pp[al] = get_place_name(place, langs)
+            place = place.parent
 
         self.place_pp_cache[cache_key] = pp
 
@@ -76,13 +64,13 @@ class Queryier:
     
     def pp_postcode(self, postcode):
         if postcode.sup:
-            name = "-".join([postcode.main,postcode.sup])
+            name = "-".join([postcode.main, postcode.sup])
         else:
             name = postcode.main
         
         pp = {11:name}
     
-        if postcode.parent:
+        if postcode.parent is not None:
             pp.update(self.pp_place(postcode.parent))
 
         return pp

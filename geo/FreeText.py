@@ -18,14 +18,13 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-from place.models import PlaceName, Country, Postcode, Lang, get_type
+from place.models import PlaceName, Country, Postcode, Lang, get_type_id
 from django.contrib.gis.db.models import Q
 from unidecode import unidecode
 import hashlib
 import re
 from geo import Results
 from geo.postcodes import UK, US
-
 
 _RE_IRRELEVANT_CHARS = re.compile("[,\\n\\r\\t;()]")
 _RE_SQUASH_SPACES = re.compile(" +")
@@ -72,18 +71,17 @@ class FreeText:
         # This is done by splitting the string up into its constituent words and using the current
         # right-hand most word as a candidate match. This copes with the fact that many countries /
         # administrative units have spaces in them.
-
+        
         for country, i in self._iter_country():
             if i == -1:
                 continue
-
             for _, postcode, j in self._iter_places(i, country):
                 if postcode is not None and j + 1 <= self._longest_match:
                     done_key = (postcode.id, j)
                     if done_key in self._matched_postcodes:
                         continue
-                    self._matched_postcodes.add(done_key)
-
+                        
+                    self._matched_postcodes.add(done_key)     
                     self._longest_match = j + 1
                     self._matches[j + 1].append(postcode)
 
@@ -206,7 +204,7 @@ class FreeText:
         # specify the country name.
         hashed_token = _hash_wd(self.split[-1])
         hashed_norm = _hash_wd(unidecode(self.split[-1]))
-        country_list = PlaceName.objects.filter(Q(name_hash=hashed_token) | Q(name_hash=hashed_norm), Q(type=get_type("country")))
+        country_list = PlaceName.objects.filter(Q(name_hash=hashed_token) | Q(name_hash=hashed_norm), Q(type__id=get_type_id("country")))
 
         done = set()
         for cnd in country_list.all():
@@ -243,8 +241,9 @@ class FreeText:
                 self.queryier.place_cache[cache_key] = place_names
 
             for p in place_names:
+                place = p.place
                 # Don't get caught out by e.g. a capital city having the same name as a state.
-                if p.place in parent_places:
+                if place in parent_places:
                     continue
                 if postcode is not None:
                     # We've got a match, but we've also previously matched a postcode.
@@ -253,23 +252,23 @@ class FreeText:
                     # tentatively matched contradict each other. Ideally we'd like to match
                     # parent IDs and so on; at the moment we can only check that the postcode
                     # and place come from the same country.
-                    if postcode.country != p.place.country:
+                    if postcode.country != place.country:
                         continue
 
                 # Ensure that if there are parent places, then this candidate is a valid child.
-                if len(parent_places) > 0 and not self._find_parent(parent_places[0], p.place):
+                if len(parent_places) > 0 and not self._find_parent(parent_places[0], place):
                     continue
 
                 new_i = _match_end_split([unidecode(x) for x in self.split], i, unidecode(p.name))
                 assert new_i < i
-                new_parent_places = [p.place] + parent_places
+                new_parent_places = [place] + parent_places
                 record_match = False
                 if new_i == -1:
                     record_match = True
                     yield new_parent_places, postcode, new_i
                 elif new_i is not None:
                     record_match = True
-                    for sub_places, sub_postcode, k in self._iter_places(new_i, p.place.country, new_parent_places, postcode):
+                    for sub_places, sub_postcode, k in self._iter_places(new_i, place.country, new_parent_places, postcode):
                         assert k < new_i
                         record_match = False
                         yield sub_places, sub_postcode, k
@@ -281,14 +280,14 @@ class FreeText:
                         continue
 
                     # OK, we've got a match; check to see if we've matched it before.
-                    done_key = (p.place, new_i)
+                    done_key = (place, new_i)
                     if done_key in self._matched_places:
                         continue
                     self._matched_places.add(done_key)
 
                     self._longest_match = new_i + 1
 
-                    self._matches[new_i + 1].append(Results.RPlace(self.queryier, p.place))
+                    self._matches[new_i + 1].append(Results.RPlace(self.queryier, place))
 
             if postcode is None:
                 for sub_postcode, k in self._iter_postcode(i, country):
@@ -298,7 +297,7 @@ class FreeText:
                         if done_key in self._matched_postcodes:
                             continue
                         self._matched_postcodes.add(done_key)
-
+                            
                         self._longest_match = 0
                         self._matches[0].append(sub_postcode)
                     else:
