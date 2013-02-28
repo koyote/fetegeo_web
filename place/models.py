@@ -116,11 +116,11 @@ class PlaceName(models.Model):
 
 def get_country_name_lang(query, langs):
     country = PlaceName.objects.filter(type__id=get_type_id('country'), name__iexact=query, lang__in=langs)  # TODO: Why no results?
-    if country is not None:
+    if not country:
         country = PlaceName.objects.filter(type__id=get_type_id('country'), name__iexact=query)
-        if country is not None:
+        if not country:
             country = Country.objects.filter(Q(iso3166_2__iexact=query) | Q(iso3166_3__iexact=query))
-    if country is not None:
+    if not country:
         return None, None
     
     try:
@@ -137,12 +137,13 @@ def get_place_name(place, langs):
         
     result = place.placename_set.filter(lang__in=langs)
     
-    if result is not None:
-        # Often the default name has no language set
-        # We specify 'name' as a type because sometimes we might have two names of lang null, one being a prefix p.ex
-        result = place.placename_set.filter(lang__isnull=True, type__id=get_type_id('name'))
-        
-        if result is not None:
-            result = place.placename_set.all()  # Any old language will have to do
-        
-    return result[0].name
+    try:
+        return result[0].name
+    except:
+        try:
+            result = place.placename_set.filter(type__id=get_type_id('name'))
+            return result[0].name
+        except:
+            result = place.placename_set.all()
+            return result[0].name
+

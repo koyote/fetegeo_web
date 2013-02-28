@@ -8,10 +8,10 @@ from place.serialiser import ResultSerialiser, SerialisableResult
 from rest_framework.decorators import api_view, renderer_classes
 from rest_framework.renderers import XMLRenderer, JSONRenderer
 from rest_framework.response import Response
+from timer import Timer
 import ast
 import os
 import pygeoip
-from timer import Timer
 
 _DEFAULT_LANG = Lang.objects.get(iso639_1='EN').id
 q = Queryier.Queryier()
