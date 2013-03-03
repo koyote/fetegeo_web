@@ -141,4 +141,4 @@ LOGGING = {
 }
 
 CACHE_BACKEND = 'file:///var/tmp/django_cache'
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'pitapps.com', 'koy.dyndns.biz', 'www.pitapps.com', 'fathomless-peak-1826.herokuapp.com']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1']

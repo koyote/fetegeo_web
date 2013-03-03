@@ -32,13 +32,12 @@ class Timer:
 def _import_data(cursor):
     for table in _TABLES:
         with open(_IMPORT_DIR + table + '.txt') as f:
-            print("Importing data for: " + table)
+            print("Importing: " + table)
             cursor.copy_from(f, table)
             connection.commit()
             
 def _execute_postgis(cursor):
     with open(_IMPORT_DIR + 'impdjango.sql') as f:
-        print("Executing PostGIS statments...")
         query = ''
         comment = ''
         for line in f:
@@ -49,7 +48,7 @@ def _execute_postgis(cursor):
             query += line
             
             if ";" in line:
-                print("Executing: " + comment.strip()) 
+                print(comment.strip()) 
                 with Timer():
                     cursor.execute(query)
                     connection.commit()
@@ -58,14 +57,13 @@ def _execute_postgis(cursor):
 def _vacuum_analyze(cursor):
     old_iso_level = connection.connection.isolation_level
     connection.connection.set_isolation_level(0)
-    print('Executing: VACUUM ANALYZE')
     cursor.execute('VACUUM ANALYZE')
     connection.commit()
     connection.connection.set_isolation_level(old_iso_level)
     
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('-f', '--osm-file', type=str, help='Specify an OSM to process with osmosis.')
+    parser.add_argument('-f', '--osm-file', type=str, help='Specify an OSM file to process with osmosis.')
     args = parser.parse_args()
        
     if not args.osm_file:
@@ -79,6 +77,11 @@ if __name__ == "__main__":
         call_command('flush', interactive=False)  # Delete all data if there was data.
         cursor = connection.cursor()
         
+        print("\nImporting data...")
         _import_data(cursor)
+        
+        print("\nExecuting PostGIS statments...")
         _execute_postgis(cursor)
+        
+        print('\nVACUUM ANALYZE')
         _vacuum_analyze(cursor)

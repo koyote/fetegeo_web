@@ -8,3 +8,4 @@ timer.py
 uwsgi.ini
 fetegeo_web/static/*
 place/geoip/*
+fetegeo_web/settings_prod.py
