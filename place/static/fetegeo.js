@@ -21,11 +21,8 @@ function getResult(id, type) {
 	r = id + type;
 	if (!result[r]) {
 		$.ajax({
-			type : "POST",
-			url : "/api/loc/" + id + ".json",
-			data : {
-				'type' : type
-			},
+			type : "GET",
+			url : "/api/loc/" + type + "/" + id + ".json",
 			async : false,
 			dataType : 'json'
 		}).done(function(data) {

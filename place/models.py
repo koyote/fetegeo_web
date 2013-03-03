@@ -120,8 +120,8 @@ def get_country_name_lang(query, langs):
         country = PlaceName.objects.filter(type__id=get_type_id('country'), name__iexact=query)
         if not country:
             country = Country.objects.filter(Q(iso3166_2__iexact=query) | Q(iso3166_3__iexact=query))
-    if not country:
-        return None, None
+            if not country:
+                return None, None
     
     try:
         return country[0].name, country.lang
@@ -134,16 +134,15 @@ def get_type_id(type_name):
     return type_ids[type_name]
 
 def get_place_name(place, langs):
-        
-    result = place.placename_set.filter(lang__in=langs)
     
     try:
-        return result[0].name
+        # Find name in language chosen
+        return place.placename_set.filter(lang__in=langs)[0].name
     except:
         try:
-            result = place.placename_set.filter(type__id=get_type_id('name'))
-            return result[0].name
+            # Find the official name
+            return place.placename_set.filter(type__id=get_type_id('name'))[0].name
         except:
-            result = place.placename_set.all()
-            return result[0].name
+            # Nothing found, return any name
+            return place.placename_set.all()[0].name
 

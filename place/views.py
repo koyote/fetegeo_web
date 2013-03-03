@@ -8,7 +8,6 @@ from place.serialiser import ResultSerialiser, SerialisableResult
 from rest_framework.decorators import api_view, renderer_classes
 from rest_framework.renderers import XMLRenderer, JSONRenderer
 from rest_framework.response import Response
-from timer import Timer
 import ast
 import os
 import pygeoip
@@ -18,6 +17,9 @@ q = Queryier.Queryier()
 geoip = pygeoip.GeoIP(os.path.join(os.path.dirname(__file__), 'geoip/GeoLiteCity.dat').replace('\\', '/'), pygeoip.MEMORY_CACHE)
     
 def index(request):
+    """
+    Entry point for the default index.html. Handles all form options and validation.
+    """
     error = False
     user_lat_lng, ctry = _get_coor_and_country(request)
     
@@ -35,8 +37,7 @@ def index(request):
             if not query:
                 error = True
             else:
-                with Timer('search'):
-                    q_res = q.search([lang], find_all, dangling, query, ctry)
+                q_res = q.search([lang], find_all, dangling, query, ctry)
                 place_names, postcode_names, places = _merge_results(q_res)
                 if (not place_names and not postcode_names) or not places:
                     return _rtr(request, 'index.html', {'no_result': True, 'q': query, 'form': form, 'user_lat_lng': user_lat_lng})
@@ -101,14 +102,13 @@ def ctry(request, query, format=None):
     return Response(dict(result=country, query=query, lang=lang))
 
 
-@api_view(['POST'])
+@api_view(['GET'])
 @renderer_classes((JSONRenderer, XMLRenderer))
-def get_location(request, query, format=None):
+def get_location(request, t, query, format=None):
     """
     Method dealing with the API requests asking for the location of a place's id.
     This only retrieves locations that are stored in the cache.
     """
-    t = request.DATA['type']
     location = cache.get(query + t)
        
     if not location:

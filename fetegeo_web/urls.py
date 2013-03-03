@@ -6,7 +6,7 @@ from django.http import HttpResponse
 urlpatterns = patterns('place.views',
      url(r'^api/geo/(?P<query>.+)$', 'geo'),
      url(r'^api/ctry/(?P<query>.+)$', 'ctry'),
-     url(r'^api/loc/(?P<query>.+)$', 'get_location'),
+     url(r'^api/loc/(?P<t>.+)/(?P<query>.+)$', 'get_location'),
 )
 
 urlpatterns = format_suffix_patterns(urlpatterns, allowed=['json', 'xml'], suffix_required=True)
