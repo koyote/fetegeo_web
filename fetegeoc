@@ -52,6 +52,11 @@ class Fetegeoc:
 
 
     def _parse_args(self):
+        """
+        Argument parser using argparse library.
+        Automatically calls the function attached to the specified command.
+        """
+        
         # Main Parser
         parser = argparse.ArgumentParser(description=_DESCRIPTION, prog='Fetegeo')
         parser.add_argument('--version', action='version', version='%(prog)s ' + _VERSION)
@@ -87,6 +92,10 @@ class Fetegeoc:
     
     
     def _pp_geo(self, data):
+        """
+        Pretty prints results from a 'geo' query.
+        """
+        
         self._handle_error(data)
         
         i = 1
@@ -103,7 +112,12 @@ class Fetegeoc:
             
             
     def _pp_ctry(self, data):
+        """
+        Pretty prints results from a 'country' query.
+        """
+        
         self._handle_error(data)
+        
         print("Match:")
         self._print_wrap("{0}: {1}\n".format("Query", data["query"]))
         self._print_wrap("{0}: {1}\n".format("Name", data["result"]))
@@ -113,13 +127,17 @@ class Fetegeoc:
   
             
     def _print_wrap(self, text):
+        """
+        Uses textwrap to make sure wrapped lines are indented (useful for long location lists).
+        """
+        
         print(textwrap.fill(text, initial_indent=' ', subsequent_indent='     '))
         
         
     def _handle_error(self, data):
         if 'error' in data:
-            sys.stderr.write("No match found for {}.\n".format(data["query"]))
-            sys.exit(1)
+            print("No match found for {}.\n".format(data["query"]))
+            sys.exit(0)
         
         
     def _handle_status(self, status):
@@ -135,19 +153,26 @@ class Fetegeoc:
         
         
     def _q_geo(self, args):
-
+        """
+        Geo command that calls the JSON API using the specified options.
+        """
+        
         query = quote(" ".join(args.qs))
         options = dict(find_all=args.find_all, dangling=args.allow_dangling, langs=args.lang, show_all=args.fl)
         url = 'http://{host}:{port}/api/geo/{query}.json'.format(host=args.host, port=args.port, query=query)
         response, content = self._conn.request(url, 'POST', urlencode(options), {'Content-type': 'application/x-www-form-urlencoded'})
 
         self._handle_status(response.status)
-        
         data = json.loads(content.decode('utf-8'))
+        
         self._pp_geo(data)
         
 
     def _q_ctry(self, args):
+        """
+        Country command that calls the JSON API using the specified options.
+        """
+        
         query = quote(" ".join(args.qs))
         options = dict(langs=args.lang)
         url = 'http://{host}:{port}/api/ctry/{query}.json'.format(host=args.host, port=args.port, query=query)
@@ -155,6 +180,7 @@ class Fetegeoc:
             
         self._handle_status(response.status)
         data = json.loads(content.decode('utf-8'))
+        
         self._pp_ctry(data)
 
 

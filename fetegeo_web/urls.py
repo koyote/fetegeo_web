@@ -12,8 +12,8 @@ urlpatterns = patterns('place.views',
 urlpatterns = format_suffix_patterns(urlpatterns, allowed=['json', 'xml'], suffix_required=True)
 
 urlpatterns += patterns('place.views',
-     (r'$^', 'index'),
      (r'^robots\.txt$', lambda r: HttpResponse("User-agent: *\nDisallow: ", mimetype="text/plain")),
+     (r'$^', 'index'),
 )
 
 urlpatterns += staticfiles_urlpatterns()

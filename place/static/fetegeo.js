@@ -1,24 +1,28 @@
 var map, marker, polyline, polygon, result = {};
-function initialize(lat_ng) {
+
+/* Initialise the Google Maps map. */
+function initialise(latLng) {
 	var mapOptions = {
-		center : new google.maps.LatLng(lat_ng[0], lat_ng[1]),
+		center : new google.maps.LatLng(latLng[0], latLng[1]),
 		zoom : 8,
 		mapTypeId : google.maps.MapTypeId.ROADMAP
 	};
 	map = new google.maps.Map(document.getElementById('map'), mapOptions);
 }
 
+/* Returns a bounding area that encompasses the coordinates in the given array. */
 function getBounds(coorArray) {
 	var bounds = new google.maps.LatLngBounds();
-	for ( i = 0, len = coorArray.length; i < len; i++) {
+	for ( i = 0; i < coorArray.length; i++) {
 		bounds.extend(coorArray[i]);
 	}
 	return bounds;
 }
 
+/* Send an API call to get a cached JSON object of a specified place/postcode's location. */
 function getResult(id, type) {
 	// Cache key
-	r = id + type;
+	var r = id + type;
 	if (!result[r]) {
 		$.ajax({
 			type : "GET",
@@ -40,6 +44,7 @@ function getResult(id, type) {
 	return result[r];
 };
 
+/* Handle different location results and process them. */
 function populateMap(result) {
 	var coorArray = [];
 	for ( i = 0; i < result.lat.length; i++) {
@@ -48,8 +53,9 @@ function populateMap(result) {
 	switch (result.type) {
 		case 'Point':
 			var coor = new google.maps.LatLng(result.lat, result.lng);
-			if (marker)
+			if (marker) {
 				marker.setMap();
+			}
 			marker = new google.maps.Marker({
 				map : map,
 				position : coor
@@ -58,8 +64,9 @@ function populateMap(result) {
 			break;
 		case 'LineString':
 		case 'MultiLineString':
-			if (polyline)
+			if (polyline) {
 				polyline.setMap();
+			}
 			polyline = new google.maps.Polyline({
 				path : coorArray,
 				strokeColor : '#FF0000',
@@ -71,8 +78,9 @@ function populateMap(result) {
 			break;
 		case 'Polygon':
 		case 'MultiPolygon':
-			if (polygon)
+			if (polygon) {
 				polygon.setMap();
+			}
 			polygon = new google.maps.Polygon({
 				paths : coorArray,
 				strokeColor : '#FF0000',
@@ -95,8 +103,9 @@ $(document).ready(function() {
 		$('div[class^=results]').each(function() {
 			$(this).click(function() {
 				var result = getResult(this.id, $(this).attr('name'));
-				if (result)
+				if (result) {
 					populateMap(result);
+				}
 			}).hover(function() {
 				this.className = this.className.replace('OFF', 'ON');
 			}, function() {

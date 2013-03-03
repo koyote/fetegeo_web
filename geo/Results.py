@@ -24,6 +24,10 @@ class Result:
         self.dangling = dangling
     
     def print_pp(self, admin_levels=[]):
+        """
+        Return a string that only contains names whose admin levels are found in admin_levels and in order of highest admin level to lowest.
+        If admin_levels is empty, return a string of all the names.
+        """
         pp = self.ri.pp
         res = [pp[max(pp)]]
         for k in sorted(pp, reverse=True):
