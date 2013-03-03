@@ -1,0 +1,1 @@
+web: gunicorn fetegeo_web.wsgi 

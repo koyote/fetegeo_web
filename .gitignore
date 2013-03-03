@@ -4,3 +4,7 @@
 .*
 import/*.txt
 !/.gitignore
+timer.py
+uwsgi.ini
+fetegeo_web/static/*
+place/geoip/*
