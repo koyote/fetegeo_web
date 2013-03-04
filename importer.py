@@ -6,6 +6,7 @@ import time
 import subprocess
 import shlex
 import argparse
+import sys
 management.setup_environ(settings)
 from django.db import connection
 
@@ -32,37 +33,46 @@ class Timer:
             h, m = divmod(m, 60)
             print("Time: {:.0f} hours, {:.0f} minutes and {:.0f} seconds.".format(h, m, s))
 
+
 def _import_data(cursor):
     """
     Import the data created by osmosis found in the 'import' dir to postgres.
     """
     for table in _TABLES:
-        with open(_IMPORT_DIR + table + '.txt') as f:
-            print("Importing: " + table)
-            cursor.copy_from(f, table)
-            connection.commit()
+        try:
+            with open(_IMPORT_DIR + table + '.txt') as f:
+                print("Importing: " + table)
+                cursor.copy_from(f, table)
+                connection.commit()
+        except IOError:
+            sys.stderr('Could not open import files. Please make sure Osmosis managed to create them properly!')
+            sys.exit(1)
             
 def _execute_postgis(cursor):
     """
     Run PostGIS commands on the databse for cleaning up geometry objects and calculating relationships
     between different locations.
     """
-    with open(_IMPORT_DIR + 'impdjango.sql') as f:
-        query = ''
-        comment = ''
-        for line in f:
-            if line.startswith("--"):
-                comment = line.replace("--", "")
-                continue
-            
-            query += line
-            
-            if ";" in line:
-                print(comment.strip()) 
-                with Timer():
-                    cursor.execute(query)
-                    connection.commit()
-                query = comment = ''
+    try:
+        with open(_IMPORT_DIR + 'impdjango.sql') as f:
+            query = ''
+            comment = ''
+            for line in f:
+                if line.startswith("--"):
+                    comment = line.replace("--", "")
+                    continue
+                
+                query += line
+                
+                if ";" in line:
+                    print(comment.strip()) 
+                    with Timer():
+                        cursor.execute(query)
+                        connection.commit()
+                    query = comment = ''
+    except IOError:
+        sys.stderr('Could not open impdjango.sql. Please make sure it can be found in ' + _IMPORT_DIR)
+        sys.exit(1)
 
 def _vacuum_analyze(cursor):
     """
@@ -78,13 +88,23 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-f', '--osm-file', type=str, help='Specify an OSM file to process with osmosis.')
     args = parser.parse_args()
-       
+    
+    # Osmosis
     if not args.osm_file:
-        print("No OSM file mentioned. Add one with the -f command.")
+        sys.stderr("No OSM file specified. Add one with the -f command.")
     else:
-        osmosis_command = shlex.split('osmosis --fast-read-xml file="' + args.osm_file + '" --fimp outdir=' + _IMPORT_DIR)
+        if args.osm_file.endswith(('.bz2', '.osm')):
+            read = '--fast-read-xml'
+        elif args.osm_file.endswith('.pbf'):
+            read = '--read-pbf-fast'
+        else:
+            sys.stderr("Osmosis file must be in bz2, xml or pbg format.")
+            sys.exit(1)
+            
+        osmosis_command = shlex.split('osmosis {read} file={file} --fimp outdir={outdir}'.format(read=read, file=args.osm_file, outdir=_IMPORT_DIR))
         subprocess.check_output(osmosis_command)
-
+        
+    # Psql import
     with Timer():
         call_command('syncdb', interactive=False)  # Create DB _TABLES if they don't exist already.
         call_command('flush', interactive=False)  # Delete all data if there was data.
