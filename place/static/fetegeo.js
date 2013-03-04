@@ -14,7 +14,7 @@ function initialise(latLng) {
 function getBounds(coorArray) {
 	var bounds = new google.maps.LatLngBounds();
 	for ( i = 0; i < coorArray.length; i++) {
-		if ($.isArray(coorArray)) {
+		if ($.isArray(coorArray[i])) {
 			for ( j = 0; j < coorArray[i].length; j++) {
 				bounds.extend(coorArray[i][j]);
 			}
