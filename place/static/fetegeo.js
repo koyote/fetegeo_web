@@ -14,7 +14,13 @@ function initialise(latLng) {
 function getBounds(coorArray) {
 	var bounds = new google.maps.LatLngBounds();
 	for ( i = 0; i < coorArray.length; i++) {
-		bounds.extend(coorArray[i]);
+		if ( coorArray instanceof Array) {
+			for ( j = 0; j < coorArray[i].length; j++) {
+				bounds.extend(coorArray[i][j]);
+			}
+		} else {
+			bounds.extend(coorArray[i]);
+		}
 	}
 	return bounds;
 }
@@ -47,8 +53,18 @@ function getResult(id, type) {
 /* Handle different location results and process them. */
 function populateMap(result) {
 	var coorArray = [];
-	for ( i = 0; i < result.lat.length; i++) {
-		coorArray[i] = new google.maps.LatLng(result.lat[i], result.lng[i]);
+	if (result.type == 'MultiPolygon') {
+		for ( i = 0; i < result.lat.length; i++) {
+			var path = [];
+			for ( j = 0; j < result.lat[i].length; j++) {
+				path[j] = new google.maps.LatLng(result.lat[i][j], result.lng[i][j]);
+			}
+			coorArray[i] = path;
+		}
+	} else {
+		for ( i = 0; i < result.lat.length; i++) {
+			coorArray[i] = new google.maps.LatLng(result.lat[i], result.lng[i]);
+		}
 	}
 	switch (result.type) {
 		case 'Point':

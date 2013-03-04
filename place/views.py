@@ -121,9 +121,20 @@ def get_location(request, t, query, format=None):
         lat = []
         lng = []
         for polys in location.coords:
-                for x, y in polys:
-                    lat.append(x)
-                    lng.append(y)
+                if location.geom_type == 'MultiPolygon':
+                    for p in polys:
+                        t_lat = []
+                        t_lng = []
+                        for x, y in p:
+                            t_lat.append(x)
+                            t_lng.append(y)
+                        lat.append(t_lat)
+                        lng.append(t_lng)
+                else:
+                    for x, y in polys:
+                        lat.append(x)
+                        lng.append(y)
+
                     
     return Response(dict(type=location.geom_type, x=lat, y=lng, centroidX=location.centroid.x, centroidY=location.centroid.y))
         
