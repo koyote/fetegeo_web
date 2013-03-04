@@ -13,7 +13,10 @@ from django.db import connection
 _TABLES = ['type', 'country', 'lang', 'place', 'postcode', 'place_name']
 _IMPORT_DIR = os.path.join(os.path.dirname(__file__), 'import/').replace('\\', '/')
 
-class Timer:    
+class Timer:
+    """
+    Handy timer class used for timing various methods.
+    """
     def __enter__(self):
         self.start = time.time()
 
@@ -30,6 +33,9 @@ class Timer:
             print("Time: {:.0f} hours, {:.0f} minutes and {:.0f} seconds.".format(h, m, s))
 
 def _import_data(cursor):
+    """
+    Import the data created by osmosis found in the 'import' dir to postgres.
+    """
     for table in _TABLES:
         with open(_IMPORT_DIR + table + '.txt') as f:
             print("Importing: " + table)
@@ -37,6 +43,10 @@ def _import_data(cursor):
             connection.commit()
             
 def _execute_postgis(cursor):
+    """
+    Run PostGIS commands on the databse for cleaning up geometry objects and calculating relationships
+    between different locations.
+    """
     with open(_IMPORT_DIR + 'impdjango.sql') as f:
         query = ''
         comment = ''
@@ -55,6 +65,9 @@ def _execute_postgis(cursor):
                 query = comment = ''
 
 def _vacuum_analyze(cursor):
+    """
+    Vacuum analyze needs to be run from a different isolation level.
+    """
     old_iso_level = connection.connection.isolation_level
     connection.connection.set_isolation_level(0)
     cursor.execute('VACUUM ANALYZE')

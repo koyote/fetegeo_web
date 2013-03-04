@@ -1,4 +1,4 @@
-var map, marker, polyline, polygon, result = {};
+var map, marker, result = {};
 
 /* Initialise the Google Maps map. */
 function initialise(latLng) {
@@ -14,7 +14,7 @@ function initialise(latLng) {
 function getBounds(coorArray) {
 	var bounds = new google.maps.LatLngBounds();
 	for ( i = 0; i < coorArray.length; i++) {
-		if ( coorArray instanceof Array) {
+		if ($.isArray(coorArray)) {
 			for ( j = 0; j < coorArray[i].length; j++) {
 				bounds.extend(coorArray[i][j]);
 			}
@@ -80,10 +80,10 @@ function populateMap(result) {
 			break;
 		case 'LineString':
 		case 'MultiLineString':
-			if (polyline) {
-				polyline.setMap();
+			if (marker) {
+				marker.setMap();
 			}
-			polyline = new google.maps.Polyline({
+			marker = new google.maps.Polyline({
 				path : coorArray,
 				strokeColor : '#FF0000',
 				strokeOpacity : 1.0,
@@ -94,10 +94,10 @@ function populateMap(result) {
 			break;
 		case 'Polygon':
 		case 'MultiPolygon':
-			if (polygon) {
-				polygon.setMap();
+			if (marker) {
+				marker.setMap();
 			}
-			polygon = new google.maps.Polygon({
+			marker = new google.maps.Polygon({
 				paths : coorArray,
 				strokeColor : '#FF0000',
 				strokeOpacity : '1.0',
