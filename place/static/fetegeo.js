@@ -13,9 +13,9 @@ function initialise(latLng) {
 /* Returns a bounding area that encompasses the coordinates in the given array. */
 function getBounds(coorArray) {
 	var bounds = new google.maps.LatLngBounds();
-	for ( i = 0; i < coorArray.length; i++) {
+	for (var i = 0; i < coorArray.length; i++) {
 		if ($.isArray(coorArray[i])) {
-			for ( j = 0; j < coorArray[i].length; j++) {
+			for (var j = 0; j < coorArray[i].length; j++) {
 				bounds.extend(coorArray[i][j]);
 			}
 		} else {
@@ -48,21 +48,21 @@ function getResult(id, type) {
 		});
 	}
 	return result[r];
-};
+}
 
 /* Handle different location results and process them. */
 function populateMap(result) {
 	var coorArray = [];
 	if (result.type == 'MultiPolygon') {
-		for ( i = 0; i < result.lat.length; i++) {
+		for (var i = 0; i < result.lat.length; i++) {
 			var path = [];
-			for ( j = 0; j < result.lat[i].length; j++) {
+			for (var j = 0; j < result.lat[i].length; j++) {
 				path[j] = new google.maps.LatLng(result.lat[i][j], result.lng[i][j]);
 			}
 			coorArray[i] = path;
 		}
 	} else {
-		for ( i = 0; i < result.lat.length; i++) {
+		for (var i = 0; i < result.lat.length; i++) {
 			coorArray[i] = new google.maps.LatLng(result.lat[i], result.lng[i]);
 		}
 	}
@@ -109,7 +109,7 @@ function populateMap(result) {
 			map.fitBounds(getBounds(coorArray));
 			break;
 	}
-	center = new google.maps.LatLng(result.centerLat, result.centerLng);
+	var center = new google.maps.LatLng(result.centerLat, result.centerLng);
 	map.panTo(center);
 }
 

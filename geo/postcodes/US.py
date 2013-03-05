@@ -45,7 +45,7 @@ def _sub_pc_match(ft, i):
 
     if sup is not None:
         p = Postcode.objects.filter(main__iexact=main, sup__iexact=sup, country=us)
-    if sup is None or p.count() == 0:
+    if sup is None or not p:
         p = Postcode.objects.filter(main__iexact=main, country=us)
 
     for cnd in p.all():

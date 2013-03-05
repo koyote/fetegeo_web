@@ -1,4 +1,4 @@
-#! /usr/bin/env python3
+#!/usr/bin/env python3
 
 """
  Copyright (C) 2013 Pit Apps
@@ -22,17 +22,15 @@
  IN THE SOFTWARE.
 """
 
-from django.core import management
-from django.core.management import call_command
-import fetegeo_web.settings as settings
 import os
 import time
 import subprocess
 import shlex
 import argparse
 import sys
-management.setup_environ(settings)
+os.environ['DJANGO_SETTINGS_MODULE'] = 'fetegeo_web.settings'
 from django.db import connection
+from django.core.management import call_command
 
 
 _TABLES = ['type', 'country', 'lang', 'place', 'postcode', 'place_name']
@@ -117,7 +115,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-f', '--osm-file', type=str, help='Specify an OSM file to process with osmosis. (.pbf highly preferred!)')
     args = parser.parse_args()
-    
+
     # Osmosis
     if not args.osm_file:
         print("No OSM file specified. Add one with the -f command.")
@@ -138,11 +136,9 @@ if __name__ == "__main__":
         call_command('syncdb', interactive=False)  # Create DB _TABLES if they don't exist already.
         call_command('flush', interactive=False)  # Delete all data if there was data.
         cursor = connection.cursor()
-        
+
         print("\nImporting data...")
         _import_data(cursor)
-        
         print("\nExecuting PostGIS statments...")
         _execute_postgis(cursor)
-        
         _vacuum_analyze(cursor)
