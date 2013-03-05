@@ -67,7 +67,7 @@ def _import_data(cursor):
                 cursor.copy_from(f, table)
                 connection.commit()
         except IOError:
-            sys.stderr.write('Could not open import files. Please make sure Osmosis managed to create them properly!')
+            sys.stderr.write('Could not open import files. Please make sure Osmosis managed to create them properly!\n')
             sys.exit(1)
             
 def _execute_postgis(cursor):
@@ -96,7 +96,7 @@ def _execute_postgis(cursor):
                     query = ''
 
     except IOError:
-        sys.stderr.write('Could not open impdjango.sql. Please make sure it can be found in ' + _IMPORT_DIR)
+        sys.stderr.write('Could not open impdjango.sql. Please make sure it can be found in ' + _IMPORT_DIR+'\n')
         sys.exit(1)
 
 def _vacuum_analyze(cursor):
@@ -125,7 +125,7 @@ if __name__ == "__main__":
         elif args.osm_file.endswith('.pbf'):
             read = '--read-pbf-fast'
         else:
-            sys.stderr.write("Osmosis file must be in bz2, xml or pbg format.")
+            sys.stderr.write("Osmosis file must be in bz2, xml or pbg format.\n")
             sys.exit(1)
             
         osmosis_command = shlex.split('osmosis {read} file={file} --fimp outdir={outdir}'.format(read=read, file=args.osm_file, outdir=_IMPORT_DIR))
