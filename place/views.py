@@ -20,31 +20,35 @@
  IN THE SOFTWARE.
 """
 
+import ast
+import os
+
 from django.core.cache import cache
 from django.core.context_processors import csrf
 from django.shortcuts import render_to_response
+from rest_framework.decorators import api_view, renderer_classes
+from rest_framework.renderers import XMLRenderer, JSONRenderer
+from rest_framework.response import Response
+import pygeoip
+
 from geo import Queryier
 from place.forms import IndexForm
 from place.models import Lang, get_country_name_lang, Place, Country
 from place.serialiser import ResultSerialiser, SerialisableResult
-from rest_framework.decorators import api_view, renderer_classes
-from rest_framework.renderers import XMLRenderer, JSONRenderer
-from rest_framework.response import Response
-import ast
-import os
-import pygeoip
+
 
 _DEFAULT_LANG = Lang.objects.get(iso639_1='EN').id
 q = Queryier.Queryier()
 geoip = pygeoip.GeoIP(os.path.join(os.path.dirname(__file__), 'geoip/GeoLiteCity.dat').replace('\\', '/'), pygeoip.MEMORY_CACHE)
-    
+
+
 def index(request):
     """
     Entry point for the default index.html. Handles all form options and validation.
     """
     error = False
     user_lat_lng, ctry = _get_coor_and_country(request)
-    
+
     if request.method == 'POST':
         form = IndexForm(request.POST)
         if form.is_valid():
@@ -52,10 +56,10 @@ def index(request):
             lang = form.cleaned_data['langs']
             dangling = form.cleaned_data['dangling']
             find_all = form.cleaned_data['find_all']
-            
+
             if not lang:
                 lang = _DEFAULT_LANG
-                
+
             if not query:
                 error = True
             else:
@@ -64,10 +68,11 @@ def index(request):
                 if (not place_names and not postcode_names) or not places:
                     return _rtr(request, 'index.html', {'no_result': True, 'q': query, 'form': form, 'user_lat_lng': user_lat_lng})
                 else:
-                    return _rtr(request, 'index.html', {'place_names': place_names, 'postcode_names': postcode_names, 'form': form, 'user_lat_lng': user_lat_lng})
+                    return _rtr(request, 'index.html',
+                                {'place_names': place_names, 'postcode_names': postcode_names, 'form': form, 'user_lat_lng': user_lat_lng})
     else:
         form = IndexForm()
-        
+
     return _rtr(request, 'index.html', {'error': error, 'form': form, 'user_lat_lng': user_lat_lng})
 
 
@@ -82,18 +87,18 @@ def geo(request, query, format=None):
     find_all = ast.literal_eval(request.DATA['find_all'])
     show_all = ast.literal_eval(request.DATA['show_all'])
     lang_str = request.DATA['langs']
-    
+
     langs = _find_langs(lang_str)
     _, ctry = _get_coor_and_country(request)
-    
+
     if not langs:
         langs = [_DEFAULT_LANG]
 
     q_res = q.search(langs, find_all, dangling, query, ctry)
-        
+
     if not q_res:
         return Response(dict(error="True", query=query))
-        
+
     place_names, postcode_names, places = _merge_results(q_res)
     place_names.update(postcode_names)
     res = [SerialisableResult(x, place_names[x.id]) for x in places]
@@ -108,16 +113,16 @@ def ctry(request, query, format=None):
     Method dealing with the API requests to country.
     """
 
-    lang_str = request.DATA['langs']    
+    lang_str = request.DATA['langs']
     langs = _find_langs(lang_str)
-    
+
     if not langs:
         langs = [_DEFAULT_LANG]
 
     country, lang = get_country_name_lang(query, langs)
     if lang:
         lang = lang.name
-        
+
     if not country:
         return Response(dict(error="True", query=query))
 
@@ -132,10 +137,10 @@ def get_location(request, t, query, format=None):
     This only retrieves locations that are stored in the cache.
     """
     location = cache.get(query + t)
-       
+
     if not location:
         return Response(dict(error="True", query=query))
-    
+
     try:
         lat = location.x
         lng = location.y
@@ -143,23 +148,21 @@ def get_location(request, t, query, format=None):
         lat = []
         lng = []
         for polys in location.coords:
-                if location.geom_type == 'MultiPolygon':
-                    for p in polys:
-                        t_lat = []
-                        t_lng = []
-                        for x, y in p:
-                            t_lat.append(x)
-                            t_lng.append(y)
-                        lat.append(t_lat)
-                        lng.append(t_lng)
-                else:
-                    for x, y in polys:
-                        lat.append(x)
-                        lng.append(y)
+            if location.geom_type == 'MultiPolygon':
+                for p in polys:
+                    t_lat = []
+                    t_lng = []
+                    for x, y in p:
+                        t_lat.append(x)
+                        t_lng.append(y)
+                    lat.append(t_lat)
+                    lng.append(t_lng)
+            else:
+                for x, y in polys:
+                    lat.append(x)
+                    lng.append(y)
 
-                    
     return Response(dict(type=location.geom_type, x=lat, y=lng, centroidX=location.centroid.x, centroidY=location.centroid.y))
-        
 
 
 def _find_langs(lang_str):
@@ -221,12 +224,12 @@ def _merge_results(q_res, admin_levels=[]):
                     postcode_names[place.id] = pp
 
     places.extend(place for place in ls.values())
-    
+
     # Cache locations in order to retrieve them easily onclick.
     for p in places:
         key = str(p.id) + p.__class__.__name__
-        cache.set(key, p.location, 9999)    
-            
+        cache.set(key, p.location, 9999)
+
     return place_names, postcode_names, places
 
 

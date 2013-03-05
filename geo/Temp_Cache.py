@@ -32,9 +32,9 @@ import threading
  the old to the current cache), while not taking up too much memory.
 """
 
-
 SMALL_CACHE_SIZE = 1000
 LARGE_CACHE_SIZE = 5000
+
 
 class Cached_Dict:
     def __init__(self, max_size):

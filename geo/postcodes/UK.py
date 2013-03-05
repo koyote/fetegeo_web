@@ -20,10 +20,11 @@
  IN THE SOFTWARE.
 """
 
+import re
 
 from geo import Results
+
 from place.models import Postcode, Country
-import re
 
 
 _RE_UK_PARTIAL_POSTCODE = re.compile(
@@ -37,6 +38,7 @@ _RE_UK_FULL_POSTCODE = re.compile(
 # Not all UK postcodes belong to GB (Isle of Man for example)
 _UK_CODES = ["GB", "IM", "GY", "JE", "AI", "IO", "FK", "GI", "PN", "GS", "SH", "TC"]
 COUNTRIES = [Country.objects.get(iso3166_2=code) for code in _UK_CODES]
+
 
 def postcode_match(ft, i):
     assert i > -1

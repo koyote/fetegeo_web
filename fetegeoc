@@ -24,10 +24,11 @@
 
 from urllib.parse import urlencode, quote
 import argparse
-import httplib2
 import json
 import sys
 import textwrap
+
+import httplib2
 
 
 _VERSION = "0.3"
@@ -45,8 +46,6 @@ _D_HELP = 'If enabled the search will discard the left parts of the query that d
 
 
 class Fetegeoc:
-    
-    
     def __init__(self):
         self._conn = httplib2.Http('.cache')
         self._parse_args()
@@ -57,19 +56,19 @@ class Fetegeoc:
         Argument parser using argparse library.
         Automatically calls the function attached to the specified command.
         """
-        
+
         # Main Parser
         parser = argparse.ArgumentParser(description=_DESCRIPTION, prog='Fetegeo')
         parser.add_argument('--version', action='version', version='%(prog)s ' + _VERSION)
         parser.add_argument('-s', '--host', type=str, help='Host', default=_DEFAULT_HOST)
         parser.add_argument('-p', '--port', type=str, help='Port', default=_DEFAULT_PORT)
         parser.add_argument('-l', '--lang', action='append', help=_L_HELP)
-        subparsers = parser.add_subparsers()       
-        
+        subparsers = parser.add_subparsers()
+
         # Query parser used as parent by subparsers
         query_parser = argparse.ArgumentParser(add_help=False)
         query_parser.add_argument('qs', metavar='Query', nargs='+', help=_QUERY_HELP)
-        
+
         # Parser for 'country'
         parser_ctry = subparsers.add_parser('country', help='Country Query', parents=[query_parser])
         parser_ctry.set_defaults(func=self._q_ctry)
@@ -80,25 +79,25 @@ class Fetegeoc:
         parser_geo.add_argument('--fl', '--full-location', action='store_true', help=_SA_HELP)
         parser_geo.add_argument('-d', '--allow-dangling', action='store_true', help=_D_HELP)
         parser_geo.set_defaults(func=self._q_geo)
-        
+
         args = parser.parse_args()
         if not args.lang:  # roundabout way for circumventing bug in argsparse that adds _DEFAULT_LANG to lang even when it's been set
             args.lang = _DEFAULT_LANG
-        
+
         try:  # it would be nice to know how to set subparsers to be required
             args.func(args)
         except AttributeError:
             sys.stderr.write("Error: Please specify a query mode ('geo', 'country').\n\n")
             print(parser.format_help())
-    
-    
+
+
     def _pp_geo(self, data):
         """
         Pretty prints results from a 'geo' query.
         """
-        
+
         self._handle_error(data)
-        
+
         i = 1
         for result in data:
             print("Match #{}".format(i))
@@ -110,37 +109,37 @@ class Fetegeoc:
             if population:
                 self._print_wrap("{0}: {1}".format("Population", population))
             i += 1
-            
-            
+
+
     def _pp_ctry(self, data):
         """
         Pretty prints results from a 'country' query.
         """
-        
+
         self._handle_error(data)
-        
+
         print("Match:")
         self._print_wrap("{0}: {1}\n".format("Query", data["query"]))
         self._print_wrap("{0}: {1}\n".format("Name", data["result"]))
         lang = data["lang"]
         if lang:
             self._print_wrap("{0}: {1}\n".format("Language", lang))
-  
-            
+
+
     def _print_wrap(self, text):
         """
         Uses textwrap to make sure wrapped lines are indented (useful for long location lists).
         """
-        
+
         print(textwrap.fill(text, initial_indent=' ', subsequent_indent='     '))
-        
-        
+
+
     def _handle_error(self, data):
         if 'error' in data:
             print("No match found for {}.\n".format(data["query"]))
             sys.exit(0)
-        
-        
+
+
     def _handle_status(self, status):
         if status != 200:
             if status == 404:
@@ -150,14 +149,14 @@ class Fetegeoc:
                 sys.stderr.write("Server error. Please try again later.\n")
                 sys.exit(1)
             sys.stderr.write("Unknown error\n")
-            sys.exit(1) 
-        
-        
+            sys.exit(1)
+
+
     def _q_geo(self, args):
         """
         Geo command that calls the JSON API using the specified options.
         """
-        
+
         query = quote(" ".join(args.qs))
         options = dict(find_all=args.find_all, dangling=args.allow_dangling, langs=args.lang, show_all=args.fl)
         url = 'http://{host}:{port}/api/geo/{query}.json'.format(host=args.host, port=args.port, query=query)
@@ -165,23 +164,23 @@ class Fetegeoc:
 
         self._handle_status(response.status)
         data = json.loads(content.decode('utf-8'))
-        
+
         self._pp_geo(data)
-        
+
 
     def _q_ctry(self, args):
         """
         Country command that calls the JSON API using the specified options.
         """
-        
+
         query = quote(" ".join(args.qs))
         options = dict(langs=args.lang)
         url = 'http://{host}:{port}/api/ctry/{query}.json'.format(host=args.host, port=args.port, query=query)
         response, content = self._conn.request(url, 'POST', urlencode(options), {'Content-type': 'application/x-www-form-urlencoded'})
-            
+
         self._handle_status(response.status)
         data = json.loads(content.decode('utf-8'))
-        
+
         self._pp_ctry(data)
 
 

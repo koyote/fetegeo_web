@@ -22,16 +22,18 @@
 
 from rest_framework import serializers
 
+
 class LocationField(serializers.RelatedField):
     """
     Special location field that handles the 'show_all' option by returning a centroid if needed.
     """
+
     def to_native(self, value):
         if self.context['show_all']:
-            return {"type":value.geom_type}, {"coordinates":value.coords}
+            return {"type": value.geom_type}, {"coordinates": value.coords}
         else:
-            return {"type":value.geom_type}, {"coordinates":value.centroid.coords}
-        
+            return {"type": value.geom_type}, {"coordinates": value.centroid.coords}
+
 
 class ResultSerialiser(serializers.Serializer):
     osm_id = serializers.IntegerField()
@@ -39,10 +41,12 @@ class ResultSerialiser(serializers.Serializer):
     location = LocationField()
     pp = serializers.CharField()
 
+
 class SerialisableResult():
     """
     Like the Result class in geo but agnostic about its type (postcode, place)
     """
+
     def __init__(self, place, pp):
         self.place = place
         self.pp = pp

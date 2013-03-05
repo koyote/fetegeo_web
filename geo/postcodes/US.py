@@ -20,10 +20,11 @@
  IN THE SOFTWARE.
 """
 
+import re
 
 from geo import Results
 from place.models import Postcode, Country
-import re
+
 
 _RE_US_ZIP = re.compile("^[0-9]{5}$")
 _RE_US_ZIP_PLUS4 = re.compile("^[0-9]{5}-[0-9]{4}$")
@@ -49,6 +50,5 @@ def _sub_pc_match(ft, i):
         p = Postcode.objects.filter(main__iexact=main, country=us)
 
     for cnd in p.all():
-
         match = Results.RPost_Code(ft, cnd)
         yield match, i - 1

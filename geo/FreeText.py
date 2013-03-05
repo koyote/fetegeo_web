@@ -20,32 +20,34 @@
  IN THE SOFTWARE.
 """
 
-from place.models import PlaceName, Country, Postcode, Lang, get_type_id
-from django.contrib.gis.db.models import Q
-from unidecode import unidecode
 import hashlib
 import re
+
+from django.contrib.gis.db.models import Q
+from unidecode import unidecode
+
+from place.models import PlaceName, Country, Postcode, Lang, get_type_id
 from geo import Results
 from geo.postcodes import UK, US
+
 
 _RE_IRRELEVANT_CHARS = re.compile("[,\\n\\r\\t;()]")
 _RE_SQUASH_SPACES = re.compile(" +")
 _RE_SPLIT = re.compile("[ ,/]")
 _RE_EU_ZIP = re.compile('^[A-Za-z]{1,3}-[0-9]{3,10}$')
 
+
 class FreeText:
-    
-    
     def search(self, queryier, langs, find_all, allow_dangling, qs, host_country):
         self.queryier = queryier
         self.qs = _cleanup(qs)
         self.split, self.split_indices = _split(self.qs)
-        
+
         self.langs = [Lang.objects.get(id=lang) for lang in langs]
         self.find_all = find_all
         self.allow_dangling = allow_dangling
         self.host_country = host_country
-        
+
         results_cache_key = (tuple(langs), find_all, allow_dangling, self.qs, host_country)
         if queryier.results_cache.has_key(results_cache_key):
             return queryier.results_cache[results_cache_key]
@@ -73,7 +75,7 @@ class FreeText:
         # This is done by splitting the string up into its constituent words and using the current
         # right-hand most word as a candidate match. This copes with the fact that many countries /
         # administrative units have spaces in them.
-        
+
         for country, i in self._iter_country():
             if i == -1:
                 continue
@@ -82,8 +84,8 @@ class FreeText:
                     done_key = (postcode.id, j)
                     if done_key in self._matched_postcodes:
                         continue
-                        
-                    self._matched_postcodes.add(done_key)     
+
+                    self._matched_postcodes.add(done_key)
                     self._longest_match = j + 1
                     self._matches[j + 1].append(postcode)
 
@@ -172,7 +174,7 @@ class FreeText:
             dangling = ""
 
         final_results = [Results.Result(m, dangling) for m in results]
-        
+
         queryier.results_cache[results_cache_key] = final_results
 
         return final_results
@@ -195,7 +197,7 @@ class FreeText:
                 # As a bizarre special case, the ISO 2 code for the UK is GB, but people might
                 # reasonably be expected to specify "UK" so we hack that in.
                 iso2_cnd = "gb"
-            
+
             country = Country.objects.filter(iso3166_2__iexact=iso2_cnd)
             if country.count() > 0:
                 country = country[0]
@@ -239,7 +241,7 @@ class FreeText:
                     place_names = PlaceName.objects.filter(Q(name_hash=sub_hash) | Q(name_hash=norm_hash), place__country=country).distinct('place', 'name')
                 else:
                     place_names = PlaceName.objects.filter(Q(name_hash=sub_hash) | Q(name_hash=norm_hash)).distinct('place', 'name')
-     
+
                 self.queryier.place_cache[cache_key] = place_names
 
             for p in place_names:
@@ -299,7 +301,7 @@ class FreeText:
                         if done_key in self._matched_postcodes:
                             continue
                         self._matched_postcodes.add(done_key)
-                            
+
                         self._longest_match = 0
                         self._matches[0].append(sub_postcode)
                     else:
@@ -322,7 +324,7 @@ class FreeText:
         cache_key = (find, place)
         if self.queryier.parent_cache.has_key(cache_key):
             return self.queryier.parent_cache[cache_key]
-        
+
         if place.parent is None:
             self.queryier.parent_cache[cache_key] = False
             return False
@@ -335,7 +337,7 @@ class FreeText:
             return r
 
 
-    def _iter_postcode(self, i, country):  
+    def _iter_postcode(self, i, country):
         uk = UK.COUNTRIES
         us = [Country.objects.get(iso3166_2="US")]
         pc_candidate = self.split[i]
@@ -347,11 +349,10 @@ class FreeText:
         if country in us + [None]:
             for sub_postcode, j in US.postcode_match(self, i):
                 yield sub_postcode, j
-         
+
         # In Europe, postcodes are sometimes written as C-NNNN Where C is a country car code and N are digits
         if _RE_EU_ZIP.match(pc_candidate):
             pc_candidate = pc_candidate.split('-')[1]
-
 
         if country is not None:
             p = Postcode.objects.filter(main__iexact=pc_candidate, country=country)

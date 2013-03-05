@@ -20,11 +20,12 @@
  IN THE SOFTWARE.
 """
 
+
 class Result:
     def __init__(self, ri, dangling):
         self.ri = ri
         self.dangling = dangling
-    
+
     def print_pp(self, admin_levels=[]):
         """
         Return a string that only contains names whose admin levels are found in admin_levels and in order of highest admin level to lowest.
@@ -35,7 +36,7 @@ class Result:
         for k in sorted(pp, reverse=True):
             if k != max(pp) and (k in admin_levels or not admin_levels):
                 res.append(pp[k])
-        return ", ".join(res) 
+        return ", ".join(res)
 
 
 class RPlace:
@@ -48,7 +49,7 @@ class RPlace:
             self.population = place.population
         except AttributeError:
             self.population = None
-              
+
 
 class RPost_Code:
     def __init__(self, queryier, postcode):

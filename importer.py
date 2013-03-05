@@ -28,6 +28,7 @@ import subprocess
 import shlex
 import argparse
 import sys
+
 os.environ['DJANGO_SETTINGS_MODULE'] = 'fetegeo_web.settings'
 from django.db import connection
 from django.core.management import call_command
@@ -36,10 +37,12 @@ from django.core.management import call_command
 _TABLES = ['type', 'country', 'lang', 'place', 'postcode', 'place_name']
 _IMPORT_DIR = os.path.join(os.path.dirname(__file__), 'import/').replace('\\', '/')
 
+
 class Timer:
     """
     Handy timer class used for timing various methods.
     """
+
     def __enter__(self):
         self.start = time.time()
 
@@ -69,7 +72,8 @@ def _import_data(cursor):
         except IOError:
             sys.stderr.write('Could not open import files. Please make sure Osmosis managed to create them properly!\n')
             sys.exit(1)
-            
+
+
 def _execute_postgis(cursor):
     """
     Run PostGIS commands on the databse for cleaning up geometry objects and calculating relationships
@@ -82,22 +86,23 @@ def _execute_postgis(cursor):
                 if line.startswith("--"):
                     comment = line.replace("--", "").strip()
                     if 'Vacuum Analyse' in comment:
-                            _vacuum_analyze(cursor)
+                        _vacuum_analyze(cursor)
                     continue
-                
+
                 query += line
-                
+
                 if ";" in line:
                     print(comment)
                     with Timer():
                         cursor.execute(query)
                         connection.commit()
-                    
+
                     query = ''
 
     except IOError:
-        sys.stderr.write('Could not open impdjango.sql. Please make sure it can be found in ' + _IMPORT_DIR+'\n')
+        sys.stderr.write('Could not open impdjango.sql. Please make sure it can be found in ' + _IMPORT_DIR + '\n')
         sys.exit(1)
+
 
 def _vacuum_analyze(cursor):
     """
@@ -110,7 +115,8 @@ def _vacuum_analyze(cursor):
         cursor.execute('VACUUM ANALYZE')
         connection.commit()
         connection.connection.set_isolation_level(old_iso_level)
-    
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-f', '--osm-file', type=str, help='Specify an OSM file to process with osmosis. (.pbf highly preferred!)')
@@ -127,10 +133,10 @@ if __name__ == "__main__":
         else:
             sys.stderr.write("Osmosis file must be in bz2, xml or pbg format.\n")
             sys.exit(1)
-            
+
         osmosis_command = shlex.split('osmosis {read} file={file} --fimp outdir={outdir}'.format(read=read, file=args.osm_file, outdir=_IMPORT_DIR))
         subprocess.check_output(osmosis_command)
-        
+
     # Psql import
     with Timer():
         call_command('syncdb', interactive=False)  # Create DB _TABLES if they don't exist already.
