@@ -69,7 +69,7 @@ def _import_data(cursor):
                 cursor.copy_from(f, table)
                 connection.commit()
         except IOError:
-            sys.stderr('Could not open import files. Please make sure Osmosis managed to create them properly!')
+            sys.stderr.write('Could not open import files. Please make sure Osmosis managed to create them properly!')
             sys.exit(1)
             
 def _execute_postgis(cursor):
@@ -83,30 +83,36 @@ def _execute_postgis(cursor):
             comment = ''
             for line in f:
                 if line.startswith("--"):
-                    comment = line.replace("--", "")
+                    comment = line.replace("--", "").strip()
+                    if 'Vacuum Analyse' in comment:
+                            _vacuum_analyze(cursor)
                     continue
                 
                 query += line
                 
                 if ";" in line:
-                    print(comment.strip()) 
+                    print(comment)
                     with Timer():
                         cursor.execute(query)
                         connection.commit()
-                    query = comment = ''
+                    
+                    query = ''
+
     except IOError:
-        sys.stderr('Could not open impdjango.sql. Please make sure it can be found in ' + _IMPORT_DIR)
+        sys.stderr.write('Could not open impdjango.sql. Please make sure it can be found in ' + _IMPORT_DIR)
         sys.exit(1)
 
 def _vacuum_analyze(cursor):
     """
     Vacuum analyze needs to be run from a different isolation level.
     """
-    old_iso_level = connection.connection.isolation_level
-    connection.connection.set_isolation_level(0)
-    cursor.execute('VACUUM ANALYZE')
-    connection.commit()
-    connection.connection.set_isolation_level(old_iso_level)
+    print('Vacuum Analyze')
+    with Timer():
+        old_iso_level = connection.connection.isolation_level
+        connection.connection.set_isolation_level(0)
+        cursor.execute('VACUUM ANALYZE')
+        connection.commit()
+        connection.connection.set_isolation_level(old_iso_level)
     
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -115,14 +121,14 @@ if __name__ == "__main__":
     
     # Osmosis
     if not args.osm_file:
-        sys.stderr("No OSM file specified. Add one with the -f command.")
+        print("No OSM file specified. Add one with the -f command.")
     else:
         if args.osm_file.endswith(('.bz2', '.osm')):
             read = '--fast-read-xml'
         elif args.osm_file.endswith('.pbf'):
             read = '--read-pbf-fast'
         else:
-            sys.stderr("Osmosis file must be in bz2, xml or pbg format.")
+            sys.stderr.write("Osmosis file must be in bz2, xml or pbg format.")
             sys.exit(1)
             
         osmosis_command = shlex.split('osmosis {read} file={file} --fimp outdir={outdir}'.format(read=read, file=args.osm_file, outdir=_IMPORT_DIR))
@@ -140,5 +146,4 @@ if __name__ == "__main__":
         print("\nExecuting PostGIS statments...")
         _execute_postgis(cursor)
         
-        print('\nVACUUM ANALYZE')
         _vacuum_analyze(cursor)

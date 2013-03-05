@@ -1,9 +1,3 @@
--- Clustering place location
-CLUSTER place_location_id ON place;
-
--- Clustering postcode location
-CLUSTER postcode_location_id ON postcode;
-
 -- Building postcode areas
 UPDATE postcode
 SET location = ST_BuildArea(location)
@@ -32,6 +26,12 @@ UPDATE place
 SET location = null
 WHERE NOT ST_IsValid(location);
 
+-- Clustering place location
+CLUSTER place_location_id ON place;
+
+-- Clustering postcode location
+CLUSTER postcode_location_id ON postcode;
+
 -- Updating postcode countries
 UPDATE postcode
 SET country_id = place.country_id
@@ -44,13 +44,23 @@ SET country_id = p2.country_id
 FROM place as p2
 WHERE p2.country_id IS NOT NULL AND ST_Covers(p2.location, place.location);
 
--- Updating postcode parents
+-- Set postcode area
+UPDATE postcode
+SET area = ST_Area(location);
+
+-- Set place area
+UPDATE place
+SET area = ST_Area(location);
+
+-- Vacuum Analyse
+
+-- Computing postcode parents
 UPDATE postcode
 SET parent_id = b_id
 FROM (
   SELECT small.id as s_id, big.id as b_id
   FROM postcode as small, place as big
-  WHERE ST_Area(big.location) = (
+  WHERE big.area = (
 	  SELECT MIN(ST_Area(b2.location))
 	  FROM place as b2
 	  WHERE ST_Covers(b2.location, small.location)
@@ -60,13 +70,13 @@ FROM (
 ) pp
 WHERE id = s_id;
 
--- Updating place parents
+-- Computing place parents
 UPDATE place
 SET parent_id = b_id
 FROM (
   SELECT small.id as s_id, big.id as b_id
   FROM place as small, place as big
-  WHERE ST_Area(big.location) = (
+  WHERE big.area = (
 	  SELECT MIN(ST_Area(b2.location))
 	  FROM place as b2
 	  WHERE ST_Covers(b2.location, small.location)
