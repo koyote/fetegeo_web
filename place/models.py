@@ -82,6 +82,7 @@ class Place(models.Model):
     admin_level = models.IntegerField(blank=True, null=True)
     population = models.BigIntegerField(blank=True, null=True)
     parent = models.ForeignKey('self', blank=True, null=True)
+    area = models.FloatField(blank=True, null=True)
     
     objects = models.GeoManager()
           
@@ -103,6 +104,7 @@ class Postcode(models.Model):
     sup = models.TextField(blank=True, null=True)
     country = models.ForeignKey(Country, blank=True, null=True)
     parent = models.ForeignKey(Place, blank=True, null=True)
+    area = models.FloatField(blank=True, null=True)
     
     objects = models.GeoManager()
     
@@ -137,6 +139,10 @@ class PlaceName(models.Model):
 # Helper functions
 
 def get_country_name_lang(query, langs):
+    """
+    Returns the country name in a specific language.
+    If it can't find it it will return the name in English.
+    """
     country = PlaceName.objects.filter(type__id=get_type_id('country'), name__iexact=query, lang__in=langs)  # TODO: Why no results?
     if not country:
         country = PlaceName.objects.filter(type__id=get_type_id('country'), name__iexact=query)
@@ -151,11 +157,19 @@ def get_country_name_lang(query, langs):
         return country[0].name, None
 
 def get_type_id(type_name):
+    """
+    Return the id of a given type. The type is also saved in a 'cache'
+    """
     if type_name not in type_ids:
         type_ids[type_name] = Type.objects.get(name=type_name).id
     return type_ids[type_name]
 
 def get_place_name(place, langs):
+    """
+    Returns the place name in one of the given languages.
+    If it can't find it in the language specified it will try and return the official name.
+    If all else fails it will return any name attached to the place.
+    """
     
     try:
         # Find name in language chosen

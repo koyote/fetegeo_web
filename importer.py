@@ -79,8 +79,7 @@ def _execute_postgis(cursor):
     """
     try:
         with open(_IMPORT_DIR + 'impdjango.sql') as f:
-            query = ''
-            comment = ''
+            query = comment = ''
             for line in f:
                 if line.startswith("--"):
                     comment = line.replace("--", "").strip()

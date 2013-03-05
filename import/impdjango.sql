@@ -52,6 +52,12 @@ SET area = ST_Area(location);
 UPDATE place
 SET area = ST_Area(location);
 
+-- Create postcode area index
+CREATE INDEX on postcode(area);
+
+-- Create place area index
+CREATE INDEX on place(area);
+
 -- Vacuum Analyse
 
 -- Computing postcode parents
@@ -61,7 +67,7 @@ FROM (
   SELECT small.id as s_id, big.id as b_id
   FROM postcode as small, place as big
   WHERE big.area = (
-	  SELECT MIN(ST_Area(b2.location))
+	  SELECT MIN(b2.area)
 	  FROM place as b2
 	  WHERE ST_Covers(b2.location, small.location)
 	  AND NOT ST_Equals(b2.location, small.location)
@@ -77,7 +83,7 @@ FROM (
   SELECT small.id as s_id, big.id as b_id
   FROM place as small, place as big
   WHERE big.area = (
-	  SELECT MIN(ST_Area(b2.location))
+	  SELECT MIN(b2.area)
 	  FROM place as b2
 	  WHERE ST_Covers(b2.location, small.location)
 	  AND NOT ST_Equals(b2.location, small.location)

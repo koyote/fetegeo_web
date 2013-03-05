@@ -140,13 +140,11 @@ def get_location(request, t, query, format=None):
         lat = location.x
         lng = location.y
     except AttributeError:
-        lat = []
-        lng = []
+        lat = lng = []
         for polys in location.coords:
                 if location.geom_type == 'MultiPolygon':
                     for p in polys:
-                        t_lat = []
-                        t_lng = []
+                        t_lat = t_lng = []
                         for x, y in p:
                             t_lat.append(x)
                             t_lng.append(y)
@@ -190,10 +188,9 @@ def _merge_results(q_res, admin_levels=[]):
     It will also try and merge LineStrings that are close enough to other LineStrings to be considered part of the same street.
     The method returns a list of places and a dict of place.id's to pretty print place_names.
     """
-    place_names = dict()
-    postcode_names = dict()
+    place_names = postcode_names = ls = dict()
     places = list()
-    ls = dict()
+
     for r in q_res:
         place = r.ri.place
         pp = r.print_pp(admin_levels)
@@ -254,6 +251,6 @@ def _get_coor_and_country(request):
         except:
             country = None
     else:
-        user_lat_lng = [49.5981299, 6.1308834]  # lets default to luxembourg because we can!
+        user_lat_lng = [49.5981299, 6.1308834]  # lets default to Luxembourg because we can!
         country = None
     return user_lat_lng, country
