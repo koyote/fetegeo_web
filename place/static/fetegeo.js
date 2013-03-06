@@ -1,16 +1,17 @@
-var map, marker, result = {};
+var map, marker, result = {}, osm;
 
-/* Initialise the Google Maps map. */
+// Initialise the  map.
 function initialise(latLng) {
-    var mapOptions = {
-        center: new google.maps.LatLng(latLng[0], latLng[1]),
-        zoom: 8,
-        mapTypeId: google.maps.MapTypeId.ROADMAP
-    };
-    map = new google.maps.Map(document.getElementById('map'), mapOptions);
+    var proj = new OpenLayers.Projection("EPSG:4326"); // Transform from WGS 1984
+    map = new OpenLayers.Map('map');
+    osm = new OpenLayers.Layer.OSM();
+    map.addLayer(osm);
+    map.setCenter(new OpenLayers.LonLat(latLng[1], latLng[0]).transform(proj, map.getProjectionObject()), 8);
+    console.log(latLng);
 }
 
-/* Returns a bounding area that encompasses the coordinates in the given array. */
+/*
+// Returns a bounding area that encompasses the coordinates in the given array.
 function getBounds(coorArray) {
     var bounds = new google.maps.LatLngBounds();
     for (var i = 0, cLen = coorArray.length; i < cLen; i++) {
@@ -25,7 +26,7 @@ function getBounds(coorArray) {
     return bounds;
 }
 
-/* Send an API call to get a cached JSON object of a specified place/postcode's location. */
+// Send an API call to get a cached JSON object of a specified place/postcode's location.
 function getResult(id, type) {
     // Cache key
     var r = id + type;
@@ -50,7 +51,7 @@ function getResult(id, type) {
     return result[r];
 }
 
-/* Handle different location results and process them. */
+// Handle different location results and process them.
 function populateMap(result) {
     var coorArray = [];
     if (result.type == 'MultiPolygon') {
@@ -132,3 +133,4 @@ $(document).ready(function () {
 
     resultOnclick();
 });
+*/

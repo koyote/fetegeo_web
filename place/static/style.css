@@ -34,6 +34,7 @@ hr {
 
 #map {
     height: 100%;
+    overflow: hidden; /* Needed for OpenLayers mouse zoom to work... */
 }
 
 .linkOFF span {
