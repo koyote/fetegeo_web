@@ -26,9 +26,10 @@ import re
 from django.contrib.gis.db.models import Q
 from unidecode import unidecode
 
-from place.models import PlaceName, Country, Postcode, Lang, get_type_id
+from place.models import PlaceName, Country, Postcode, Lang, get_type_id, Place
 from geo import Results
 from geo.postcodes import UK, US
+from django.core.cache import cache
 
 
 _RE_IRRELEVANT_CHARS = re.compile("[,\\n\\r\\t;()]")
@@ -114,7 +115,7 @@ class FreeText:
                     i += 1
 
         # Sort the results into alphabetical order.
-        results.sort(key=lambda x: x.pp[max(x.pp)])
+        #results.sort(key=lambda x: x.pp[max(x.pp)])
 
         # Now we try to find the best match.
 
@@ -172,7 +173,8 @@ class FreeText:
         else:
             dangling = ""
 
-        final_results = [Results.Result(m, dangling) for m in results]
+        r_dang = [Results.Result(m, dangling, queryier) for m in results]
+        final_results = self._merge_results(r_dang)
 
         queryier.results_cache[results_cache_key] = final_results
 
@@ -286,7 +288,7 @@ class FreeText:
 
                     self._longest_match = new_i + 1
 
-                    self._matches[new_i + 1].append(Results.RPlace(self.queryier, place))
+                    self._matches[new_i + 1].append(Results.RPlace(place))
 
             if postcode is None:
                 for sub_postcode, k in self._iter_postcode(i, country):
@@ -357,7 +359,7 @@ class FreeText:
                 # We search for UK/US postcodes elsewhere.
                 continue
 
-            match = Results.RPost_Code(self.queryier, cnd)
+            match = Results.RPost_Code(cnd)
             yield match, i - 1
 
         if country not in uk + [None]:
@@ -367,6 +369,52 @@ class FreeText:
         if country not in us + [None]:
             for sub_postcode, j in US.postcode_match(self, i):
                 yield sub_postcode, j
+
+    def _merge_results(self, q_res, admin_levels=[]):
+        """
+        Method takes a list of results produced by the fetegeo search command.
+        It will skip any results with exactly the same pretty-print name (as they are assumed to be identical)
+        It will also try and merge LineStrings that are close enough to other LineStrings to be considered part of the same street.
+        The method returns a list of places and a dict of place.id's to pretty print place_names.
+        """
+        place_names = {}
+        postcode_names = {}
+        ls = {}
+        places = []
+
+        for r in q_res:
+            place = r.ri.place
+            pp = r.print_pp(admin_levels)
+            if place.location is None:
+                continue
+            if place.location.geom_type in ('LineString', 'MultiLineString'):
+                for i, p in ls.items():
+                    if place.location.distance(p.location) < 0.025:
+                        ls[i].location = p.location.union(place.location)
+                        break
+                else:
+                    ls[place.id] = place
+                    if isinstance(place, Place):
+                        place_names[place.id] = pp
+                    else:
+                        postcode_names[place.id] = pp
+
+            else:
+                if pp not in place_names.values():
+                    places.append(place)
+                    if isinstance(place, Place):
+                        place_names[place.id] = pp
+                    else:
+                        postcode_names[place.id] = pp
+
+        places.extend(place for place in ls.values())
+
+        # Cache locations in order to retrieve them easily onclick.
+        for p in places:
+            key = str(p.id) + p.__class__.__name__
+            cache.set(key, p.location.geojson, 9999)
+
+        return place_names, postcode_names, places
 
 
 #

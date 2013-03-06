@@ -63,8 +63,7 @@ def index(request):
             if not query:
                 error = True
             else:
-                q_res = q.search([lang], find_all, dangling, query, ctry)
-                place_names, postcode_names, places = _merge_results(q_res)
+                place_names, postcode_names, places = q.search([lang], find_all, dangling, query, ctry)
                 if (not place_names and not postcode_names) or not places:
                     return _rtr(request, 'index.html', {'no_result': True, 'q': query, 'form': form, 'user_lon_lat': user_lon_lat})
                 else:
@@ -163,53 +162,6 @@ def _rtr(request, html, c):
     """
     c.update(csrf(request))
     return render_to_response(html, c)
-
-
-def _merge_results(q_res, admin_levels=[]):
-    """
-    Method takes a list of results produced by the fetegeo search command.
-    It will skip any results with exactly the same pretty-print name (as they are assumed to be identical)
-    It will also try and merge LineStrings that are close enough to other LineStrings to be considered part of the same street.
-    The method returns a list of places and a dict of place.id's to pretty print place_names.
-    """
-    place_names = {}
-    postcode_names = {}
-    ls = {}
-    places = []
-
-    for r in q_res:
-        place = r.ri.place
-        pp = r.print_pp(admin_levels)
-        if place.location is None:
-            continue
-        if place.location.geom_type in ('LineString', 'MultiLineString'):
-            for i, p in ls.items():
-                if place.location.distance(p.location) < 0.05:
-                    ls[i].location = p.location.union(place.location).merged
-                    break
-            else:
-                ls[place.id] = place
-                if isinstance(place, Place):
-                    place_names[place.id] = pp
-                else:
-                    postcode_names[place.id] = pp
-
-        else:
-            if pp not in place_names.values():
-                places.append(place)
-                if isinstance(place, Place):
-                    place_names[place.id] = pp
-                else:
-                    postcode_names[place.id] = pp
-
-    places.extend(place for place in ls.values())
-
-    # Cache locations in order to retrieve them easily onclick.
-    for p in places:
-        key = str(p.id) + p.__class__.__name__
-        cache.set(key, p.location.geojson, 9999)
-
-    return place_names, postcode_names, places
 
 
 def _get_client_ip(request):

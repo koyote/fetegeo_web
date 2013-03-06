@@ -22,9 +22,10 @@
 
 
 class Result:
-    def __init__(self, ri, dangling):
+    def __init__(self, ri, dangling, queryier):
         self.ri = ri
         self.dangling = dangling
+        self.queryier = queryier
 
     def print_pp(self, admin_levels=[]):
         """
@@ -32,7 +33,11 @@ class Result:
         If admin_levels is empty, return a string of all the names.
         :param admin_levels: list of admin levels to add to the String
         """
-        pp = self.ri.pp
+        if isinstance(self.ri, RPlace):
+            pp = self.queryier.pp_place(self.ri.place)
+        else:
+            pp = self.queryier.pp_postcode(self.ri.place)
+
         res = [pp[max(pp)]]
         for k in sorted(pp, reverse=True):
             if k != max(pp) and (k in admin_levels or not admin_levels):
@@ -41,9 +46,8 @@ class Result:
 
 
 class RPlace:
-    def __init__(self, queryier, place):
+    def __init__(self, place):
         self.place = place
-        self.pp = queryier.pp_place(place)
         self.osm_id = place.osm_id
         self.location = place.location
         try:
@@ -53,9 +57,7 @@ class RPlace:
 
 
 class RPost_Code:
-    def __init__(self, queryier, postcode):
-        self.postcode = postcode
+    def __init__(self, postcode):
         self.place = postcode
-        self.pp = queryier.pp_postcode(postcode)
         self.location = postcode.location
         self.osm_id = postcode.osm_id
