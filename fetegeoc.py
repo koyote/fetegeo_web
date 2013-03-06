@@ -50,7 +50,6 @@ class Fetegeoc:
         self._conn = httplib2.Http('.cache')
         self._parse_args()
 
-
     def _parse_args(self):
         """
         Argument parser using argparse library.
@@ -90,7 +89,6 @@ class Fetegeoc:
             sys.stderr.write("Error: Please specify a query mode ('geo', 'country').\n\n")
             print(parser.format_help())
 
-
     def _pp_geo(self, data):
         """
         Pretty prints results from a 'geo' query.
@@ -110,7 +108,6 @@ class Fetegeoc:
                 self._print_wrap("{0}: {1}".format("Population", population))
             i += 1
 
-
     def _pp_ctry(self, data):
         """
         Pretty prints results from a 'country' query.
@@ -125,7 +122,6 @@ class Fetegeoc:
         if lang:
             self._print_wrap("{0}: {1}\n".format("Language", lang))
 
-
     def _print_wrap(self, text):
         """
         Uses textwrap to make sure wrapped lines are indented (useful for long location lists).
@@ -133,12 +129,10 @@ class Fetegeoc:
 
         print(textwrap.fill(text, initial_indent=' ', subsequent_indent='     '))
 
-
     def _handle_error(self, data):
         if 'error' in data:
             print("No match found for {}.\n".format(data["query"]))
             sys.exit(0)
-
 
     def _handle_status(self, status):
         if status != 200:
@@ -150,7 +144,6 @@ class Fetegeoc:
                 sys.exit(1)
             sys.stderr.write("Unknown error\n")
             sys.exit(1)
-
 
     def _q_geo(self, args):
         """
@@ -166,7 +159,6 @@ class Fetegeoc:
         data = json.loads(content.decode('utf-8'))
 
         self._pp_geo(data)
-
 
     def _q_ctry(self, args):
         """
