@@ -141,7 +141,7 @@ def get_location(request, t, query, format=None):
     if not location:
         return Response(dict(error="True", query=query))
 
-    return Response(dict(geometry=location.geojson, centroid=location.centroid))
+    return Response(dict(geometry=location.geojson))
 
 
 def _find_langs(lang_str):

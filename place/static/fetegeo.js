@@ -1,14 +1,12 @@
-var map, vector, geojson_format, result = {}, osm;
+var map, vector, geojsonFormat, result = {};
 
-// Initialise the  map.
+// Initialise the map.
 function initialise(lngLat) {
-    console.log(lngLat);
     var proj = new OpenLayers.Projection("EPSG:4326"); // Transform from WGS 1984
     map = new OpenLayers.Map('map');
-    osm = new OpenLayers.Layer.OSM();
-    map.addLayer(osm);
+    map.addLayer(new OpenLayers.Layer.OSM());
     map.setCenter(new OpenLayers.LonLat(lngLat[0], lngLat[1]).transform(proj, map.getProjectionObject()), 8);
-    geojson_format = new OpenLayers.Format.GeoJSON({'internalProjection': map.getProjectionObject(), 'externalProjection': proj});
+    geojsonFormat = new OpenLayers.Format.GeoJSON({'internalProjection': map.getProjectionObject(), 'externalProjection': proj});
     vector = new OpenLayers.Layer.Vector();
     map.addLayer(vector);
 }
@@ -25,10 +23,7 @@ function getResult(id, type) {
                    dataType: 'json'
                }).done(function (data) {
                            if (!data.error) {
-                               result[r] = {
-                                   geometry: data.geometry,
-                                   centroid: data.centroid
-                               };
+                               result[r] = data.geometry;
                            }
                        });
     }
@@ -40,12 +35,16 @@ function populateMap(result) {
     var feature = {
         "type": "FeatureCollection",
         "features": [
-            {"geometry": jQuery.parseJSON(result.geometry),
+            {
+                "geometry": jQuery.parseJSON(result),
                 "type": "Feature",
-                "properties": {}}
+                "properties": {}
+            }
         ]
     };
-    vector.addFeatures(geojson_format.read(feature));
+    vector.removeAllFeatures();
+    vector.addFeatures(geojsonFormat.read(feature));
+    map.zoomToExtent(vector.getDataExtent());
 }
 
 $(document).ready(function () {
@@ -66,21 +65,3 @@ $(document).ready(function () {
 
     resultOnclick();
 });
-
-/*
-
- // Returns a bounding area that encompasses the coordinates in the given array.
- function getBounds(coorArray) {
- var bounds = new google.maps.LatLngBounds();
- for (var i = 0, cLen = coorArray.length; i < cLen; i++) {
- if ($.isArray(coorArray[i])) {
- for (var j = 0, jLen = coorArray[i].length; j < jLen; j++) {
- bounds.extend(coorArray[i][j]);
- }
- } else {
- bounds.extend(coorArray[i]);
- }
- }
- return bounds;
- }
- */
