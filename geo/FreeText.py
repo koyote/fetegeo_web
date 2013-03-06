@@ -30,6 +30,7 @@ from place.models import PlaceName, Country, Postcode, Lang, get_type_id, Place
 from geo import Results
 from geo.postcodes import UK, US
 from django.core.cache import cache
+from importer import Timer
 
 
 _RE_IRRELEVANT_CHARS = re.compile("[,\\n\\r\\t;()]")
@@ -173,8 +174,7 @@ class FreeText:
         else:
             dangling = ""
 
-        r_dang = [Results.Result(m, dangling, queryier) for m in results]
-        final_results = self._merge_results(r_dang)
+        final_results = self._merge_results({m.osm_id: Results.Result(m, dangling) for m in results})
 
         queryier.results_cache[results_cache_key] = final_results
 
@@ -382,9 +382,8 @@ class FreeText:
         ls = {}
         places = []
 
-        for r in q_res:
+        for r in q_res.values():
             place = r.ri.place
-            pp = r.print_pp(admin_levels)
             if place.location is None:
                 continue
             if place.location.geom_type in ('LineString', 'MultiLineString'):
@@ -394,32 +393,29 @@ class FreeText:
                         break
                 else:
                     ls[place.id] = place
-                    if isinstance(place, Place):
-                        place_names[place.id] = pp
-                    else:
-                        postcode_names[place.id] = pp
 
             else:
-                if pp not in place_names.values():
-                    places.append(place)
-                    if isinstance(place, Place):
-                        place_names[place.id] = pp
-                    else:
-                        postcode_names[place.id] = pp
+                places.append(place)
 
-        places.extend(place for place in ls.values())
+        places.extend(ls.values())
 
         # Cache locations in order to retrieve them easily onclick.
         for p in places:
             key = str(p.id) + p.__class__.__name__
             cache.set(key, p.location.geojson, 9999)
 
-        return place_names, postcode_names, places
+            # Find the pretty print names for the places
+            if isinstance(p, Place):
+                place_names[p.id] = q_res[p.osm_id].print_pp(self.queryier.pp_place, admin_levels)
+            else:
+                postcode_names[p.id] = q_res[p.osm_id].print_pp(self.queryier.pp_postcode, admin_levels)
 
+        return place_names, postcode_names
 
 #
 # Cleanup input strings, stripping extraneous spaces etc.
 #
+
 
 def _cleanup(s):
     s = s.strip()

@@ -63,8 +63,8 @@ def index(request):
             if not query:
                 error = True
             else:
-                place_names, postcode_names, places = q.search([lang], find_all, dangling, query, ctry)
-                if (not place_names and not postcode_names) or not places:
+                place_names, postcode_names = q.search([lang], find_all, dangling, query, ctry)
+                if not place_names and not postcode_names:
                     return _rtr(request, 'index.html', {'no_result': True, 'q': query, 'form': form, 'user_lon_lat': user_lon_lat})
                 else:
                     return _rtr(request, 'index.html',

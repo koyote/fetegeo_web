@@ -22,22 +22,18 @@
 
 
 class Result:
-    def __init__(self, ri, dangling, queryier):
+    def __init__(self, ri, dangling):
         self.ri = ri
         self.dangling = dangling
-        self.queryier = queryier
 
-    def print_pp(self, admin_levels=[]):
+    def print_pp(self, pretty_print, admin_levels=[]):
         """
         Return a string that only contains names whose admin levels are found in admin_levels and in order of highest admin level to lowest.
         If admin_levels is empty, return a string of all the names.
         :param admin_levels: list of admin levels to add to the String
         """
-        if isinstance(self.ri, RPlace):
-            pp = self.queryier.pp_place(self.ri.place)
-        else:
-            pp = self.queryier.pp_postcode(self.ri.place)
 
+        pp = pretty_print(self.ri.place)
         res = [pp[max(pp)]]
         for k in sorted(pp, reverse=True):
             if k != max(pp) and (k in admin_levels or not admin_levels):
@@ -50,10 +46,7 @@ class RPlace:
         self.place = place
         self.osm_id = place.osm_id
         self.location = place.location
-        try:
-            self.population = place.population
-        except AttributeError:
-            self.population = None
+        self.population = place.population
 
 
 class RPost_Code:
