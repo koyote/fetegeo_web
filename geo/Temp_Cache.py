@@ -45,7 +45,6 @@ class Cached_Dict:
         self._current = {}
         self._old = {}
 
-
     def has_key(self, k):
         self._lock.acquire()
         try:
@@ -55,7 +54,6 @@ class Cached_Dict:
             self._lock.release()
 
         return False
-
 
     def __getitem__(self, k):
         self._lock.acquire()
@@ -75,7 +73,6 @@ class Cached_Dict:
             self._lock.release()
 
         raise KeyError(k)
-
 
     def __setitem__(self, k, i):
         self._lock.acquire()

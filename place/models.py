@@ -143,6 +143,7 @@ class PlaceName(models.Model):
 
 # Helper functions
 
+
 def get_country_name_lang(query, langs):
     """
     Returns the country name in a specific language.

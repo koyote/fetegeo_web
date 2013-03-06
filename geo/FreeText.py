@@ -60,7 +60,6 @@ class FreeText:
         self._longest_match = len(self.split)
         self._matches = [[] for _ in range(len(self.split))]
 
-
         # _matched_places is a set storing (place_id, i) pairs recording that a place was found at
         # position 'i' in the split. This weeds out duplicates *unless* we're doing loose matching
         # when we might conceivably match the same place twice but with different bits of "loose"
@@ -179,7 +178,6 @@ class FreeText:
 
         return final_results
 
-
     def _iter_country(self):
         if self.host_country is not None:
             # First of all, we try and do the search as if we're in the host country. This is to
@@ -190,7 +188,6 @@ class FreeText:
             yield self.host_country, len(self.split) - 1
 
         # Then see if the user has specified an ISO 2 code of a country name.
-
         if len(self.split[-1]) == 2:
             iso2_cnd = self.split[-1]
             if iso2_cnd == "uk":
@@ -202,7 +199,6 @@ class FreeText:
             if country.count() > 0:
                 country = country[0]
                 yield country, len(self.split) - 2
-
 
         # Finally try and match a full country name. Note that we're agnostic over the language used to
         # specify the country name.
@@ -224,7 +220,6 @@ class FreeText:
 
         # Apparently none of the above was a good enough match...
         yield None, len(self.split) - 1
-
 
     def _iter_places(self, i, country, parent_places=[], postcode=None):
 
@@ -315,11 +310,9 @@ class FreeText:
                             assert sub_sub_postcode is sub_postcode
                             yield sub_places, sub_sub_postcode, k
 
-
     #
     # Return True if 'find_id' is a parent of 'place_id'.
     #
-
     def _find_parent(self, find, place):
         cache_key = (find, place)
         if self.queryier.parent_cache.has_key(cache_key):
@@ -335,7 +328,6 @@ class FreeText:
             r = self._find_parent(find, place.parent)
             self.queryier.parent_cache[cache_key] = r
             return r
-
 
     def _iter_postcode(self, i, country):
         uk = UK.COUNTRIES

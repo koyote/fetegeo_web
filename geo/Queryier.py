@@ -32,7 +32,6 @@ class Queryier:
     def search(self, langs, find_all, allow_dangling, qs, host_country):
         return self.ft.search(self, langs, find_all, allow_dangling, qs, host_country)
 
-
     def flush_caches(self):
         self.country_id_iso2_cache = {}  # These are both too small
         self.country_iso2_id_cache = {}  # to bother with a cached dict.

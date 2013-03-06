@@ -7,13 +7,13 @@ urlpatterns = patterns('place.views',
                        url(r'^api/geo/(?P<query>.+)$', 'geo'),
                        url(r'^api/ctry/(?P<query>.+)$', 'ctry'),
                        url(r'^api/loc/(?P<t>.+)/(?P<query>.+)$', 'get_location'),
-)
+                       )
 
 urlpatterns = format_suffix_patterns(urlpatterns, allowed=['json', 'xml'], suffix_required=True)
 
 urlpatterns += patterns('place.views',
                         (r'^robots\.txt$', lambda r: HttpResponse("User-agent: *\nDisallow: ", mimetype="text/plain")),
                         (r'$^', 'index'),
-)
+                        )
 
 urlpatterns += staticfiles_urlpatterns()

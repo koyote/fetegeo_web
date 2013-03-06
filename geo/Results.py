@@ -30,6 +30,7 @@ class Result:
         """
         Return a string that only contains names whose admin levels are found in admin_levels and in order of highest admin level to lowest.
         If admin_levels is empty, return a string of all the names.
+        :param admin_levels: list of admin levels to add to the String
         """
         pp = self.ri.pp
         res = [pp[max(pp)]]
