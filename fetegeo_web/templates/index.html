@@ -32,7 +32,7 @@
             <strong>Bad query!</strong>
 
         {% elif no_result %}
-            <strong>No Results for '<em style="color:#687F80">{{ q }}</em>' :(</strong>
+            <strong>No Results for '<em style="color:#687F80;">{{ q }}</em>' :(</strong>
 
         {% elif place_names or postcode_names %}
             <h2>Results</h2>
@@ -72,6 +72,7 @@
 </footer>
 
 <script src="http://openlayers.org/api/OpenLayers.js"></script>
+<script src="http://maps.google.com/maps/api/js?sensor=false"></script>
 <script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
 <script src="{{ STATIC_PREFIX }}fetegeo.js"></script>
 </body>

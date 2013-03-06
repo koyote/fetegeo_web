@@ -115,9 +115,6 @@ class FreeText:
                 else:
                     i += 1
 
-        # Sort the results into alphabetical order.
-        #results.sort(key=lambda x: x.pp[max(x.pp)])
-
         # Now we try to find the best match.
 
         found_best = False
@@ -372,9 +369,8 @@ class FreeText:
 
     def _merge_results(self, q_res, admin_levels=[]):
         """
-        Method takes a list of results produced by the fetegeo search command.
-        It will skip any results with exactly the same pretty-print name (as they are assumed to be identical)
-        It will also try and merge LineStrings that are close enough to other LineStrings to be considered part of the same street.
+        Method takes a dict of osm_id:results produced by the search command.
+        It will try and merge LineStrings that are close enough to other LineStrings to be considered part of the same street.
         The method returns a list of places and a dict of place.id's to pretty print place_names.
         """
         place_names = {}

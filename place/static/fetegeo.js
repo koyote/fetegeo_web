@@ -4,9 +4,10 @@ var map, vector, geojsonFormat, result = {};
 function initialise(lonLat) {
     var proj = new OpenLayers.Projection("EPSG:4326"); // Transform from WGS 1984
     map = new OpenLayers.Map('map');
-    map.addLayer(new OpenLayers.Layer.OSM());
-    map.setCenter(new OpenLayers.LonLat(lonLat).transform(proj, map.getProjectionObject()), 8);
-    geojsonFormat = new OpenLayers.Format.GeoJSON({'internalProjection': map.getProjectionObject(), 'externalProjection': proj});
+    var gphy = new OpenLayers.Layer.Google(
+        "Google Physical",
+        {type: google.G_PHYSICAL_MAP}
+    );
     vector = new OpenLayers.Layer.Vector('Result Vector', {
         style: {
             strokeColor: 'black',
@@ -15,7 +16,10 @@ function initialise(lonLat) {
             fillOpacity: 0.2
         }
     });
-    map.addLayer(vector);
+    map.addControl(new OpenLayers.Control.LayerSwitcher());
+    map.addLayers([new OpenLayers.Layer.OSM(),vector,gphy]);
+    map.setCenter(new OpenLayers.LonLat(lonLat).transform(proj, map.getProjectionObject()), 8);
+    geojsonFormat = new OpenLayers.Format.GeoJSON({'internalProjection': map.getProjectionObject(), 'externalProjection': proj});
 }
 
 // Send an API call to get a cached JSON object of a specified place/postcode's location.
