@@ -47,7 +47,7 @@ def index(request):
     Entry point for the default index.html. Handles all form options and validation.
     """
     error = False
-    user_lat_lng, ctry = _get_coor_and_country(request)
+    user_lng_lat, ctry = _get_coor_and_country(request)
 
     if request.method == 'POST':
         form = IndexForm(request.POST)
@@ -66,14 +66,14 @@ def index(request):
                 q_res = q.search([lang], find_all, dangling, query, ctry)
                 place_names, postcode_names, places = _merge_results(q_res)
                 if (not place_names and not postcode_names) or not places:
-                    return _rtr(request, 'index.html', {'no_result': True, 'q': query, 'form': form, 'user_lat_lng': user_lat_lng})
+                    return _rtr(request, 'index.html', {'no_result': True, 'q': query, 'form': form, 'user_lng_lat': user_lng_lat})
                 else:
                     return _rtr(request, 'index.html',
-                                {'place_names': place_names, 'postcode_names': postcode_names, 'form': form, 'user_lat_lng': user_lat_lng})
+                                {'place_names': place_names, 'postcode_names': postcode_names, 'form': form, 'user_lng_lat': user_lng_lat})
     else:
         form = IndexForm()
 
-    return _rtr(request, 'index.html', {'error': error, 'form': form, 'user_lat_lng': user_lat_lng})
+    return _rtr(request, 'index.html', {'error': error, 'form': form, 'user_lng_lat': user_lng_lat})
 
 
 @api_view(['POST'])
@@ -141,28 +141,7 @@ def get_location(request, t, query, format=None):
     if not location:
         return Response(dict(error="True", query=query))
 
-    try:
-        lat = location.x
-        lng = location.y
-    except AttributeError:
-        lat = []
-        lng = []
-        for polys in location.coords:
-            if location.geom_type == 'MultiPolygon':
-                for p in polys:
-                    t_lat = []
-                    t_lng = []
-                    for x, y in p:
-                        t_lat.append(x)
-                        t_lng.append(y)
-                    lat.append(t_lat)
-                    lng.append(t_lng)
-            else:
-                for x, y in polys:
-                    lat.append(x)
-                    lng.append(y)
-
-    return Response(dict(type=location.geom_type, x=lat, y=lng, centroidX=location.centroid.x, centroidY=location.centroid.y))
+    return Response(dict(geometry=location.geojson, centroid=location.centroid))
 
 
 def _find_langs(lang_str):
@@ -252,12 +231,12 @@ def _get_coor_and_country(request):
     ip = _get_client_ip(request)
     geodata = geoip.record_by_addr(ip)
     if geodata:
-        user_lat_lng = [geodata['latitude'], geodata['longitude']]
+        user_lng_lat = [geodata['longitude'], geodata['latitude']]
         try:
             country = Country.objects.get(iso3166_2=geodata['country_code'])
         except:
             country = None
     else:
-        user_lat_lng = [49.5981299, 6.1308834]  # lets default to Luxembourg because we can!
+        user_lng_lat = [6.1308834, 49.5981299]  # lets default to Luxembourg because we can!
         country = None
-    return user_lat_lng, country
+    return user_lng_lat, country
