@@ -47,7 +47,7 @@ def index(request):
     Entry point for the default index.html. Handles all form options and validation.
     """
     error = False
-    user_lng_lat, ctry = _get_coor_and_country(request)
+    user_lon_lat, ctry = _get_coor_and_country(request)
 
     if request.method == 'POST':
         form = IndexForm(request.POST)
@@ -66,14 +66,14 @@ def index(request):
                 q_res = q.search([lang], find_all, dangling, query, ctry)
                 place_names, postcode_names, places = _merge_results(q_res)
                 if (not place_names and not postcode_names) or not places:
-                    return _rtr(request, 'index.html', {'no_result': True, 'q': query, 'form': form, 'user_lng_lat': user_lng_lat})
+                    return _rtr(request, 'index.html', {'no_result': True, 'q': query, 'form': form, 'user_lon_lat': user_lon_lat})
                 else:
                     return _rtr(request, 'index.html',
-                                {'place_names': place_names, 'postcode_names': postcode_names, 'form': form, 'user_lng_lat': user_lng_lat})
+                                {'place_names': place_names, 'postcode_names': postcode_names, 'form': form, 'user_lon_lat': user_lon_lat})
     else:
         form = IndexForm()
 
-    return _rtr(request, 'index.html', {'error': error, 'form': form, 'user_lng_lat': user_lng_lat})
+    return _rtr(request, 'index.html', {'error': error, 'form': form, 'user_lon_lat': user_lon_lat})
 
 
 @api_view(['POST'])
@@ -136,12 +136,12 @@ def get_location(request, t, query, format=None):
     Method dealing with the API requests asking for the location of a place's id.
     This only retrieves locations that are stored in the cache.
     """
-    location = cache.get(query + t)
+    loc_geojson = cache.get(query + t)
 
-    if not location:
+    if not loc_geojson:
         return Response(dict(error="True", query=query))
 
-    return Response(dict(geometry=location.geojson))
+    return Response(dict(geometry=loc_geojson))
 
 
 def _find_langs(lang_str):
@@ -184,7 +184,7 @@ def _merge_results(q_res, admin_levels=[]):
             continue
         if place.location.geom_type in ('LineString', 'MultiLineString'):
             for i, p in ls.items():
-                if place.location.distance(p.location) < 0.01:  # TODO: is this number good?
+                if place.location.distance(p.location) < 0.05:
                     ls[i].location = p.location.union(place.location).merged
                     break
             else:
@@ -207,7 +207,7 @@ def _merge_results(q_res, admin_levels=[]):
     # Cache locations in order to retrieve them easily onclick.
     for p in places:
         key = str(p.id) + p.__class__.__name__
-        cache.set(key, p.location, 9999)
+        cache.set(key, p.location.geojson, 9999)
 
     return place_names, postcode_names, places
 
@@ -231,12 +231,12 @@ def _get_coor_and_country(request):
     ip = _get_client_ip(request)
     geodata = geoip.record_by_addr(ip)
     if geodata:
-        user_lng_lat = [geodata['longitude'], geodata['latitude']]
+        user_lon_lat = [geodata['longitude'], geodata['latitude']]
         try:
             country = Country.objects.get(iso3166_2=geodata['country_code'])
         except:
             country = None
     else:
-        user_lng_lat = [6.1308834, 49.5981299]  # lets default to Luxembourg because we can!
+        user_lon_lat = [6.1308834, 49.5981299]  # lets default to Luxembourg because we can!
         country = None
-    return user_lng_lat, country
+    return user_lon_lat, country

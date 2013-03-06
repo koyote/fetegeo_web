@@ -1,17 +1,17 @@
 var map, vector, geojsonFormat, result = {};
 
 // Initialise the map.
-function initialise(lngLat) {
+function initialise(lonLat) {
     var proj = new OpenLayers.Projection("EPSG:4326"); // Transform from WGS 1984
     map = new OpenLayers.Map('map');
     map.addLayer(new OpenLayers.Layer.OSM());
-    map.setCenter(new OpenLayers.LonLat(lngLat[0], lngLat[1]).transform(proj, map.getProjectionObject()), 8);
+    map.setCenter(new OpenLayers.LonLat(lonLat).transform(proj, map.getProjectionObject()), 8);
     geojsonFormat = new OpenLayers.Format.GeoJSON({'internalProjection': map.getProjectionObject(), 'externalProjection': proj});
     vector = new OpenLayers.Layer.Vector('Result Vector', {
         style: {
-            strokeColor: "black",
+            strokeColor: 'black',
             strokeWidth: 2.5,
-            strokeOpacity: 0.6,
+            strokeOpacity: 0.7,
             fillOpacity: 0.2
         }
     });
