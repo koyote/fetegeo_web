@@ -7,7 +7,14 @@ function initialise(lngLat) {
     map.addLayer(new OpenLayers.Layer.OSM());
     map.setCenter(new OpenLayers.LonLat(lngLat[0], lngLat[1]).transform(proj, map.getProjectionObject()), 8);
     geojsonFormat = new OpenLayers.Format.GeoJSON({'internalProjection': map.getProjectionObject(), 'externalProjection': proj});
-    vector = new OpenLayers.Layer.Vector();
+    vector = new OpenLayers.Layer.Vector('Result Vector', {
+        style: {
+            strokeColor: "black",
+            strokeWidth: 2.5,
+            strokeOpacity: 0.6,
+            fillOpacity: 0.2
+        }
+    });
     map.addLayer(vector);
 }
 
