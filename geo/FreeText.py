@@ -410,7 +410,7 @@ class FreeText:
             else:
                 postcode_names[p.id] = q_res[p.osm_id].print_pp(self.queryier.pp_postcode, admin_levels)
 
-        return place_names, postcode_names
+        return place_names, postcode_names, places
 
 #
 # Cleanup input strings, stripping extraneous spaces etc.
