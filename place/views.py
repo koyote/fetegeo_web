@@ -25,6 +25,7 @@ import os
 
 from django.core.cache import cache
 from django.core.context_processors import csrf
+from django.core.exceptions import ObjectDoesNotExist
 from django.shortcuts import render_to_response
 from rest_framework.decorators import api_view, renderer_classes
 from rest_framework.renderers import XMLRenderer, JSONRenderer
@@ -33,7 +34,7 @@ import pygeoip
 
 from geo import Queryier
 from place.forms import IndexForm
-from place.models import Lang, get_country_name_lang, Place, Country
+from place.models import Lang, get_country_name_lang, Country
 from place.serialiser import ResultSerialiser, SerialisableResult
 
 
@@ -63,11 +64,11 @@ def index(request):
             if not query:
                 error = True
             else:
-                res = q.search([lang], find_all, dangling, query, ctry)
-                if not res:
+                result = q.search([lang], find_all, dangling, query, ctry)
+                if not result:
                     return _rtr(request, 'index.html', {'no_result': True, 'q': query, 'form': form, 'user_lon_lat': user_lon_lat})
                 else:
-                    return _rtr(request, 'index.html', {'place_names': res[0], 'postcode_names': res[1], 'form': form, 'user_lon_lat': user_lon_lat})
+                    return _rtr(request, 'index.html', {'place_names': result[0], 'postcode_names': result[1], 'form': form, 'user_lon_lat': user_lon_lat})
     else:
         form = IndexForm()
 
@@ -92,12 +93,12 @@ def geo(request, query, format=None):
     if not langs:
         langs = [_DEFAULT_LANG]
 
-    res = q.search(langs, find_all, dangling, query, ctry)
+    result = q.search(langs, find_all, dangling, query, ctry)
 
-    if not res:
+    if not result:
         return Response(dict(error="True", query=query))
 
-    place_names, postcode_names, places = res
+    place_names, postcode_names, places = result
     place_names.update(postcode_names)
     res = [SerialisableResult(x, place_names[x.id]) for x in places]
     serialiser = ResultSerialiser(res, many=True, context={'show_all': show_all})
@@ -150,7 +151,7 @@ def _find_langs(lang_str):
     for iso in ast.literal_eval(lang_str):
         try:
             langs.append(Lang.objects.filter(iso639_1__iexact=iso)[0].id)
-        except:
+        except ObjectDoesNotExist:
             continue
     return langs
 
@@ -169,10 +170,8 @@ def _get_client_ip(request):
     """
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
     if x_forwarded_for:
-        ip = x_forwarded_for.split(',')[0]
-    else:
-        ip = request.META.get('REMOTE_ADDR')
-    return ip
+        return x_forwarded_for.split(',')[0]
+    return request.META.get('REMOTE_ADDR')
 
 
 def _get_coor_and_country(request):
@@ -185,7 +184,7 @@ def _get_coor_and_country(request):
         user_lon_lat = [geodata['longitude'], geodata['latitude']]
         try:
             country = Country.objects.get(iso3166_2=geodata['country_code'])
-        except:
+        except ObjectDoesNotExist:
             country = None
     else:
         user_lon_lat = [6.1308834, 49.5981299]  # lets default to Luxembourg because we can!

@@ -22,6 +22,7 @@
 
 from django.contrib.gis.db import models
 from django.contrib.gis.db.models import Q
+from django.core.exceptions import ObjectDoesNotExist
 
 type_ids = {}
 
@@ -182,11 +183,10 @@ def get_place_name(place, langs):
     try:
         # Find name in language chosen
         return place.placename_set.filter(lang__in=langs)[0].name
-    except:
+    except ObjectDoesNotExist:
         try:
             # Find the official name
             return place.placename_set.filter(type__id=get_type_id('name'))[0].name
-        except:
+        except ObjectDoesNotExist:
             # Nothing found, return any name
             return place.placename_set.all()[0].name
-
