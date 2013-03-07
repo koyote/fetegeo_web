@@ -371,6 +371,7 @@ class FreeText:
         """
         Method takes a dict of osm_id:results produced by the search command.
         It will try and merge LineStrings that are close enough to other LineStrings to be considered part of the same street.
+        It will also ignore any duplicate places.
         The method returns a list of places and a dict of place.id's to pretty print place_names.
         """
         place_names = {}
@@ -396,17 +397,24 @@ class FreeText:
         places.extend(ls.values())
 
         # Cache locations in order to retrieve them easily onclick.
+        final_places = []
         for p in places:
             key = str(p.id) + p.__class__.__name__
             cache.set(key, p.location.geojson, 9999)
 
             # Find the pretty print names for the places
             if isinstance(p, Place):
-                place_names[p.id] = q_res[p.osm_id].print_pp(self.queryier.pp_place, admin_levels)
+                pp = q_res[p.osm_id].print_pp(self.queryier.pp_place, admin_levels)
+                if pp not in place_names.values():
+                    place_names[p.id] = pp
+                    final_places.append(p)
             else:
-                postcode_names[p.id] = q_res[p.osm_id].print_pp(self.queryier.pp_postcode, admin_levels)
+                pp = q_res[p.osm_id].print_pp(self.queryier.pp_postcode, admin_levels)
+                if pp not in postcode_names.values():
+                    postcode_names[p.id] = pp
+                    final_places.append(p)
 
-        return place_names, postcode_names, places
+        return place_names, postcode_names, final_places
 
 #
 # Cleanup input strings, stripping extraneous spaces etc.

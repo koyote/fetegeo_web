@@ -3,9 +3,8 @@ var map, vector, geojsonFormat, result = {};
 // Initialise the map.
 function initialise(lonLat) {
     var proj = new OpenLayers.Projection("EPSG:4326"); // Transform from WGS 1984
-    map = new OpenLayers.Map('map');
-    var gphy = new OpenLayers.Layer.Google(
-        "Google Physical",
+    var googLayer = new OpenLayers.Layer.Google(
+        "Google Maps",
         {type: google.G_PHYSICAL_MAP}
     );
     vector = new OpenLayers.Layer.Vector('Result Vector', {
@@ -16,8 +15,9 @@ function initialise(lonLat) {
             fillOpacity: 0.2
         }
     });
+    map = new OpenLayers.Map('map');
     map.addControl(new OpenLayers.Control.LayerSwitcher());
-    map.addLayers([new OpenLayers.Layer.OSM(),vector,gphy]);
+    map.addLayers([new OpenLayers.Layer.OSM(), googLayer, vector]);
     map.setCenter(new OpenLayers.LonLat(lonLat).transform(proj, map.getProjectionObject()), 8);
     geojsonFormat = new OpenLayers.Format.GeoJSON({'internalProjection': map.getProjectionObject(), 'externalProjection': proj});
 }
@@ -58,6 +58,7 @@ function populateMap(result) {
     map.zoomToExtent(vector.getDataExtent());
 }
 
+// Click handler for results list
 $(document).ready(function () {
     function resultOnclick() {
         $('div[class^=results]').each(function () {

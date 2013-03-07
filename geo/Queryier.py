@@ -51,13 +51,14 @@ class Queryier:
 
         # We save each place name with its admin level (10 to 1).
         # If no admin level is found we'll just use one that is one less than the last.
-        al = 11
+        # The OSM admin level is sometimes set high for simple Nodes; we do not want that, so we define our own admin_level
+        al = 10
         pp = {}
 
         while place is not None:
-            al = place.admin_level or al - 1
             pp[al] = get_place_name(place, langs)
             place = place.parent
+            al -= 1
 
         self.place_pp_cache[cache_key] = pp
 
