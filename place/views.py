@@ -63,12 +63,11 @@ def index(request):
             if not query:
                 error = True
             else:
-                place_names, postcode_names, _ = q.search([lang], find_all, dangling, query, ctry)
-                if not place_names and not postcode_names:
+                res = q.search([lang], find_all, dangling, query, ctry)
+                if not res:
                     return _rtr(request, 'index.html', {'no_result': True, 'q': query, 'form': form, 'user_lon_lat': user_lon_lat})
                 else:
-                    return _rtr(request, 'index.html',
-                                {'place_names': place_names, 'postcode_names': postcode_names, 'form': form, 'user_lon_lat': user_lon_lat})
+                    return _rtr(request, 'index.html', {'place_names': res[0], 'postcode_names': res[1], 'form': form, 'user_lon_lat': user_lon_lat})
     else:
         form = IndexForm()
 
@@ -93,11 +92,12 @@ def geo(request, query, format=None):
     if not langs:
         langs = [_DEFAULT_LANG]
 
-    place_names, postcode_names, places = q.search(langs, find_all, dangling, query, ctry)
+    res = q.search(langs, find_all, dangling, query, ctry)
 
-    if not place_names and not postcode_names:
+    if not res:
         return Response(dict(error="True", query=query))
 
+    place_names, postcode_names, places = res
     place_names.update(postcode_names)
     res = [SerialisableResult(x, place_names[x.id]) for x in places]
     serialiser = ResultSerialiser(res, many=True, context={'show_all': show_all})

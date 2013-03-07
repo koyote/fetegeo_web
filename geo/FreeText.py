@@ -30,7 +30,6 @@ from place.models import PlaceName, Country, Postcode, Lang, get_type_id, Place
 from geo import Results
 from geo.postcodes import UK, US
 from django.core.cache import cache
-from importer import Timer
 
 
 _RE_IRRELEVANT_CHARS = re.compile("[,\\n\\r\\t;()]")
@@ -40,7 +39,7 @@ _RE_EU_ZIP = re.compile('^[A-Za-z]{1,3}-[0-9]{3,10}$')
 
 
 class FreeText:
-    def search(self, queryier, langs, find_all, allow_dangling, qs, host_country):
+    def search(self, queryier, langs, find_all, allow_dangling, qs, host_country, admin_levels=[]):
         self.queryier = queryier
         self.qs = _cleanup(qs)
         self.split, self.split_indices = _split(self.qs)
@@ -49,6 +48,7 @@ class FreeText:
         self.find_all = find_all
         self.allow_dangling = allow_dangling
         self.host_country = host_country
+        self.admin_levels = admin_levels
 
         results_cache_key = (tuple(langs), find_all, allow_dangling, self.qs, host_country)
         if queryier.results_cache.has_key(results_cache_key):
@@ -367,7 +367,7 @@ class FreeText:
             for sub_postcode, j in US.postcode_match(self, i):
                 yield sub_postcode, j
 
-    def _merge_results(self, q_res, admin_levels=[]):
+    def _merge_results(self, q_res):
         """
         Method takes a dict of osm_id:results produced by the search command.
         It will try and merge LineStrings that are close enough to other LineStrings to be considered part of the same street.
@@ -404,12 +404,12 @@ class FreeText:
 
             # Find the pretty print names for the places
             if isinstance(p, Place):
-                pp = q_res[p.osm_id].print_pp(self.queryier.pp_place, admin_levels)
+                pp = q_res[p.osm_id].print_pp(self.queryier.pp_place, self.admin_levels)
                 if pp not in place_names.values():
                     place_names[p.id] = pp
                     final_places.append(p)
             else:
-                pp = q_res[p.osm_id].print_pp(self.queryier.pp_postcode, admin_levels)
+                pp = q_res[p.osm_id].print_pp(self.queryier.pp_postcode, self.admin_levels)
                 if pp not in postcode_names.values():
                     postcode_names[p.id] = pp
                     final_places.append(p)
