@@ -37,6 +37,10 @@ hr {
     overflow: hidden; /* Needed for OpenLayers mouse zoom to work... */
 }
 
+#ajaxwrapper {
+    margin-top: 2%;
+}
+
 .linkOFF span {
     color: #687F9C;
 }

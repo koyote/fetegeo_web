@@ -27,41 +27,9 @@
             {{ form.as_p }}
             <input id="searchButton" type="submit" value='Search'/>
         </form>
-        <div id="ajaxwrapper">
-            {% if error %}
-                <strong>Bad query!</strong>
 
-            {% elif no_result %}
-                <strong>No Results for '<em style="color:#687F80;">{{ q }}</em>' :(</strong>
+        {% include "results.html" %}
 
-            {% elif place_names or postcode_names %}
-                <h2>Results</h2>
-
-                {% if place_names %}
-                    <h3>Places</h3>
-                    <div class='result_list'>
-                        {% for id, name in place_names.items %}
-                            <div id='{{ id }}' class='results linkOFF' name='Place'>
-                                <span>{{ name }}</span>
-                            </div>
-                        {% endfor %}
-                    </div>
-                {% endif %}
-
-                {% if postcode_names %}
-                    <h3>Postcodes</h3>
-                    <div class='result_list'>
-                        {% for id, name in postcode_names.items %}
-                            <div id='{{ id }}' class='results linkOFF' name='Postcode'>
-                                <span>{{ name }}</span>
-                            </div>
-                        {% endfor %}
-                    </div>
-                {% endif %}
-
-
-            {% endif %}
-        </div>
     </div>
 
     <div class='grid' id='map'></div>

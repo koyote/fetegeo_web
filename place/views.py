@@ -26,7 +26,7 @@ import os
 from django.core.cache import cache
 from django.core.context_processors import csrf
 from django.core.exceptions import ObjectDoesNotExist
-from django.shortcuts import render_to_response
+from django.shortcuts import render
 from rest_framework.decorators import api_view, renderer_classes
 from rest_framework.renderers import XMLRenderer, JSONRenderer
 from rest_framework.response import Response
@@ -49,6 +49,7 @@ def index(request):
     """
     error = False
     user_lon_lat, ctry = _get_coor_and_country(request)
+    renderHtmls = {'default': 'index.html', 'ajax': 'results.html'}
 
     if request.method == 'POST':
         form = IndexForm(request.POST)
@@ -66,13 +67,13 @@ def index(request):
             else:
                 result = q.search([lang], find_all, dangling, query, ctry)
                 if not result:
-                    return _rtr(request, 'index.html', {'no_result': True, 'q': query, 'form': form, 'user_lon_lat': user_lon_lat})
+                    return _rtr(request, renderHtmls, {'no_result': True, 'q': query, 'user_lon_lat': user_lon_lat})
                 else:
-                    return _rtr(request, 'index.html', {'place_names': result[0], 'postcode_names': result[1], 'form': form, 'user_lon_lat': user_lon_lat})
+                    return _rtr(request, renderHtmls, {'place_names': result[0], 'postcode_names': result[1], 'user_lon_lat': user_lon_lat})
     else:
         form = IndexForm()
 
-    return _rtr(request, 'index.html', {'error': error, 'form': form, 'user_lon_lat': user_lon_lat})
+    return _rtr(request, renderHtmls, {'error': error, 'form': form, 'user_lon_lat': user_lon_lat})
 
 
 @api_view(['POST'])
@@ -161,7 +162,9 @@ def _rtr(request, html, c):
     Wrapper for render_to_response including the CSRF tag.
     """
     c.update(csrf(request))
-    return render_to_response(html, c)
+    if request.is_ajax():
+        return render(request, html['ajax'], c)
+    return render(request, html['default'], c)
 
 
 def _get_client_ip(request):
