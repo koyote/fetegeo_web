@@ -1,11 +1,29 @@
 var map, vector, geojsonFormat, result = {};
+var spinOpts = {
+    lines: 9, // The number of lines to draw
+    length: 0, // The length of each line
+    width: 4, // The line thickness
+    radius: 10, // The radius of the inner circle
+    corners: 1, // Corner roundness (0..1)
+    rotate: 26, // The rotation offset
+    speed: 1.4, // Rounds per second
+    trail: 60, // Afterglow percentage
+    shadow: false, // Whether to render a shadow
+    hwaccel: false, // Whether to use hardware acceleration
+    className: 'spinner', // The CSS class to assign to the spinner
+    zIndex: 2e9, // The z-index (defaults to 2000000000)
+    top: '10', // Top position relative to parent in px
+    left: 'auto' // Left position relative to parent in px
+};
 
 // Initialise the map.
 function initialise(lonLat) {
     var proj = new OpenLayers.Projection("EPSG:4326"); // Transform from WGS 1984
     var googLayer = new OpenLayers.Layer.Google(
         "Google Maps",
-        {type: google.G_PHYSICAL_MAP}
+        {
+            type: google.G_PHYSICAL_MAP
+        }
     );
     vector = new OpenLayers.Layer.Vector('Result Vector', {
         style: {
@@ -59,21 +77,58 @@ function populateMap(result) {
 }
 
 // Click handler for results list
-$(document).ready(function () {
-    function resultOnclick() {
-        $('div[class^=results]').each(function () {
-            $(this).click(function () {
-                var result = getResult(this.id, $(this).attr('name'));
-                if (result) {
-                    populateMap(result);
+function resultOnclick() {
+    $('div[class^=results]').each(function () {
+        $(this).click(function () {
+            var result = getResult(this.id, $(this).attr('name'));
+            if (result) {
+                populateMap(result);
+            }
+        }).hover(function () {
+                     this.className = this.className.replace('OFF', 'ON');
+                 }, function () {
+                     this.className = this.className.replace('ON', 'OFF');
+                 });
+    });
+}
+
+// Populate Results List with ajax
+jQuery(
+    function () {
+        var form = jQuery("#searchForm");
+        form.submit(function (e) {
+            var sb = jQuery("#searchButton");
+            var ajw = jQuery("#ajaxwrapper");
+
+            sb.attr('disabled', true);
+            ajw.empty();
+            ajw.spin(spinOpts);
+            ajw.load(
+                '/ #ajaxwrapper',
+                form.serializeArray(),
+                function () {
+                    sb.attr('disabled', false);
+                    resultOnclick();
                 }
-            }).hover(function () {
-                         this.className = this.className.replace('OFF', 'ON');
-                     }, function () {
-                         this.className = this.className.replace('ON', 'OFF');
-                     });
+            );
+            e.preventDefault();
         });
     }
+);
 
-    resultOnclick();
-});
+// JQuery plugin for spinner
+$.fn.spin = function(opts) {
+    this.each(function() {
+        var $this = $(this),
+            data = $this.data();
+
+        if (data.spinner) {
+            data.spinner.stop();
+            delete data.spinner;
+        }
+        if (opts !== false) {
+            data.spinner = new Spinner($.extend({color: $this.css('color')}, opts)).spin(this);
+        }
+    });
+    return this;
+};

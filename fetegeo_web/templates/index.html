@@ -22,45 +22,46 @@
     <div class='grid'>
         <h2>Search</h2>
 
-        <form method="post" class="searchForm">
+        <form method="post" id="searchForm">
             {% csrf_token %}
             {{ form.as_p }}
             <input id="searchButton" type="submit" value='Search'/>
         </form>
+        <div id="ajaxwrapper">
+            {% if error %}
+                <strong>Bad query!</strong>
 
-        {% if error %}
-            <strong>Bad query!</strong>
+            {% elif no_result %}
+                <strong>No Results for '<em style="color:#687F80;">{{ q }}</em>' :(</strong>
 
-        {% elif no_result %}
-            <strong>No Results for '<em style="color:#687F80;">{{ q }}</em>' :(</strong>
+            {% elif place_names or postcode_names %}
+                <h2>Results</h2>
 
-        {% elif place_names or postcode_names %}
-            <h2>Results</h2>
+                {% if place_names %}
+                    <h3>Places</h3>
+                    <div class='result_list'>
+                        {% for id, name in place_names.items %}
+                            <div id='{{ id }}' class='results linkOFF' name='Place'>
+                                <span>{{ name }}</span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
 
-            {% if place_names %}
-                <h3>Places</h3>
-                <div class='result_list'>
-                    {% for id, name in place_names.items %}
-                        <div id='{{ id }}' class='results linkOFF' name='Place'>
-                            <span>{{ name }}</span>
-                        </div>
-                    {% endfor %}
-                </div>
+                {% if postcode_names %}
+                    <h3>Postcodes</h3>
+                    <div class='result_list'>
+                        {% for id, name in postcode_names.items %}
+                            <div id='{{ id }}' class='results linkOFF' name='Postcode'>
+                                <span>{{ name }}</span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+
             {% endif %}
-
-            {% if postcode_names %}
-                <h3>Postcodes</h3>
-                <div class='result_list'>
-                    {% for id, name in postcode_names.items %}
-                        <div id='{{ id }}' class='results linkOFF' name='Postcode'>
-                            <span>{{ name }}</span>
-                        </div>
-                    {% endfor %}
-                </div>
-            {% endif %}
-
-        {% endif %}
-
+        </div>
     </div>
 
     <div class='grid' id='map'></div>
@@ -74,6 +75,7 @@
 <script src="http://openlayers.org/api/OpenLayers.js"></script>
 <script src="http://maps.google.com/maps/api/js?sensor=false"></script>
 <script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
+<script src="http://fgnass.github.com/spin.js/dist/spin.min.js"></script>
 <script src="{{ STATIC_PREFIX }}fetegeo.js"></script>
 </body>
 </html>

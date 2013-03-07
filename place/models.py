@@ -22,7 +22,6 @@
 
 from django.contrib.gis.db import models
 from django.contrib.gis.db.models import Q
-from django.core.exceptions import ObjectDoesNotExist
 
 type_ids = {}
 
