@@ -25,7 +25,8 @@ import os
 
 from django.core.cache import cache
 from django.core.context_processors import csrf
-from django.shortcuts import render_to_response
+from django.core.exceptions import ObjectDoesNotExist
+from django.shortcuts import render
 from rest_framework.decorators import api_view, renderer_classes
 from rest_framework.renderers import XMLRenderer, JSONRenderer
 from rest_framework.response import Response
@@ -33,8 +34,9 @@ import pygeoip
 
 from geo import Queryier
 from place.forms import IndexForm
-from place.models import Lang, get_country_name_lang, Place, Country
+from place.models import Lang, get_country_name_lang, Country
 from place.serialiser import ResultSerialiser, SerialisableResult
+from importer import Timer
 
 
 _DEFAULT_LANG = Lang.objects.get(iso639_1='EN').id
@@ -47,7 +49,8 @@ def index(request):
     Entry point for the default index.html. Handles all form options and validation.
     """
     error = False
-    user_lng_lat, ctry = _get_coor_and_country(request)
+    user_lon_lat, ctry = _get_coor_and_country(request)
+    renderHtmls = {'default': 'index.html', 'ajax': 'results.html'}
 
     if request.method == 'POST':
         form = IndexForm(request.POST)
@@ -63,17 +66,16 @@ def index(request):
             if not query:
                 error = True
             else:
-                q_res = q.search([lang], find_all, dangling, query, ctry)
-                place_names, postcode_names, places = _merge_results(q_res)
-                if (not place_names and not postcode_names) or not places:
-                    return _rtr(request, 'index.html', {'no_result': True, 'q': query, 'form': form, 'user_lng_lat': user_lng_lat})
+                with Timer():
+                    result = q.search([lang], find_all, dangling, query, ctry)
+                if not result:
+                    return _rtr(request, renderHtmls, {'no_result': True, 'q': query, 'user_lon_lat': user_lon_lat})
                 else:
-                    return _rtr(request, 'index.html',
-                                {'place_names': place_names, 'postcode_names': postcode_names, 'form': form, 'user_lng_lat': user_lng_lat})
+                    return _rtr(request, renderHtmls, {'place_names': result[0], 'postcode_names': result[1], 'user_lon_lat': user_lon_lat})
     else:
         form = IndexForm()
 
-    return _rtr(request, 'index.html', {'error': error, 'form': form, 'user_lng_lat': user_lng_lat})
+    return _rtr(request, renderHtmls, {'error': error, 'form': form, 'user_lon_lat': user_lon_lat})
 
 
 @api_view(['POST'])
@@ -94,12 +96,12 @@ def geo(request, query, format=None):
     if not langs:
         langs = [_DEFAULT_LANG]
 
-    q_res = q.search(langs, find_all, dangling, query, ctry)
+    result = q.search(langs, find_all, dangling, query, ctry)
 
-    if not q_res:
+    if not result:
         return Response(dict(error="True", query=query))
 
-    place_names, postcode_names, places = _merge_results(q_res)
+    place_names, postcode_names, places = result
     place_names.update(postcode_names)
     res = [SerialisableResult(x, place_names[x.id]) for x in places]
     serialiser = ResultSerialiser(res, many=True, context={'show_all': show_all})
@@ -136,12 +138,12 @@ def get_location(request, t, query, format=None):
     Method dealing with the API requests asking for the location of a place's id.
     This only retrieves locations that are stored in the cache.
     """
-    location = cache.get(query + t)
+    loc_geojson = cache.get(query + t)
 
-    if not location:
+    if not loc_geojson:
         return Response(dict(error="True", query=query))
 
-    return Response(dict(geometry=location.geojson))
+    return Response(dict(geometry=loc_geojson))
 
 
 def _find_langs(lang_str):
@@ -152,7 +154,7 @@ def _find_langs(lang_str):
     for iso in ast.literal_eval(lang_str):
         try:
             langs.append(Lang.objects.filter(iso639_1__iexact=iso)[0].id)
-        except:
+        except ObjectDoesNotExist:
             continue
     return langs
 
@@ -160,56 +162,12 @@ def _find_langs(lang_str):
 def _rtr(request, html, c):
     """
     Wrapper for render_to_response including the CSRF tag.
+    Also renders a different page if the request was send through ajax.
     """
     c.update(csrf(request))
-    return render_to_response(html, c)
-
-
-def _merge_results(q_res, admin_levels=[]):
-    """
-    Method takes a list of results produced by the fetegeo search command.
-    It will skip any results with exactly the same pretty-print name (as they are assumed to be identical)
-    It will also try and merge LineStrings that are close enough to other LineStrings to be considered part of the same street.
-    The method returns a list of places and a dict of place.id's to pretty print place_names.
-    """
-    place_names = {}
-    postcode_names = {}
-    ls = {}
-    places = []
-
-    for r in q_res:
-        place = r.ri.place
-        pp = r.print_pp(admin_levels)
-        if place.location is None:
-            continue
-        if place.location.geom_type in ('LineString', 'MultiLineString'):
-            for i, p in ls.items():
-                if place.location.distance(p.location) < 0.01:  # TODO: is this number good?
-                    ls[i].location = p.location.union(place.location).merged
-                    break
-            else:
-                ls[place.id] = place
-                if isinstance(place, Place):
-                    place_names[place.id] = pp
-                else:
-                    postcode_names[place.id] = pp
-
-        else:
-            if pp not in place_names.values():
-                places.append(place)
-                if isinstance(place, Place):
-                    place_names[place.id] = pp
-                else:
-                    postcode_names[place.id] = pp
-
-    places.extend(place for place in ls.values())
-
-    # Cache locations in order to retrieve them easily onclick.
-    for p in places:
-        key = str(p.id) + p.__class__.__name__
-        cache.set(key, p.location, 9999)
-
-    return place_names, postcode_names, places
+    if request.is_ajax():
+        return render(request, html['ajax'], c)
+    return render(request, html['default'], c)
 
 
 def _get_client_ip(request):
@@ -218,10 +176,8 @@ def _get_client_ip(request):
     """
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
     if x_forwarded_for:
-        ip = x_forwarded_for.split(',')[0]
-    else:
-        ip = request.META.get('REMOTE_ADDR')
-    return ip
+        return x_forwarded_for.split(',')[0]
+    return request.META.get('REMOTE_ADDR')
 
 
 def _get_coor_and_country(request):
@@ -231,12 +187,12 @@ def _get_coor_and_country(request):
     ip = _get_client_ip(request)
     geodata = geoip.record_by_addr(ip)
     if geodata:
-        user_lng_lat = [geodata['longitude'], geodata['latitude']]
+        user_lon_lat = [geodata['longitude'], geodata['latitude']]
         try:
             country = Country.objects.get(iso3166_2=geodata['country_code'])
-        except:
+        except ObjectDoesNotExist:
             country = None
     else:
-        user_lng_lat = [6.1308834, 49.5981299]  # lets default to Luxembourg because we can!
+        user_lon_lat = [6.1308834, 49.5981299]  # lets default to Luxembourg because we can!
         country = None
-    return user_lng_lat, country
+    return user_lon_lat, country

@@ -21,7 +21,8 @@
 """
 
 from geo import Temp_Cache, FreeText
-from place.models import get_place_name
+from place.models import get_place_name, PlaceName, get_type_id
+from django.db import connection
 
 
 class Queryier:
@@ -46,20 +47,51 @@ class Queryier:
     def pp_place(self, place):
         langs = self.ft.langs
         cache_key = (tuple(langs), place)
-        if self.place_pp_cache.has_key(cache_key):
+        if cache_key in self.place_pp_cache:
             return self.place_pp_cache[cache_key]
 
-        # We save each place name with its admin level (10 to 1).
-        # If no admin level is found we'll just use one that is one less than the last.
-        al = 11
-        pp = {}
+        # Recursive query to get all parents (faster than letting django do place.parent.parent.parent etc.)
+        # This query returns a list of ids in descending order which is essentially the path from place to its parents.
+        c = connection.cursor()
+        c.execute(
+            "WITH RECURSIVE places_cte(id, parent_id, path) "
+            "AS (SELECT tp.id, tp.parent_id, tp.id::TEXT AS path "
+            "FROM place AS tp WHERE tp.parent_id IS NULL UNION ALL "
+            "SELECT c.id,  c.parent_id, (p.path || ',' || c.id) "
+            "FROM places_cte AS p, place AS c WHERE c.parent_id = p.id) "
+            "SELECT path FROM places_cte AS n WHERE n.id = {};".format(place.id)
+        )
 
-        while place is not None:
-            al = place.admin_level or al - 1
-            pp[al] = get_place_name(place, langs)
-            place = place.parent
+        place_ids = c.fetchone()[0].split(',')
+        pp = self.pn(place_ids, langs)
 
         self.place_pp_cache[cache_key] = pp
+
+        return pp
+
+    def pn(self, ids, langs):
+        """
+        This complicated method greatly speeds up getting the names of specified parent ids in order.
+        It returns a dict of names in order of importance (admin_level).
+        """
+
+        # We save each place name with its admin level (10 to 1).
+        # The OSM admin level is sometimes set high for simple Nodes; we do not want that, so we define our own admin_level
+        pp = {}
+        al = 10
+        names = [(n.place.id, n.type.id, n.name, n.lang) for n in PlaceName.objects.prefetch_related('place', 'type', 'lang').filter(place__id__in=ids)]
+        for i in reversed(ids):
+            n_sub = [n for n in names if n[0] == int(i)]
+            for n in n_sub:
+                if n[3] in langs:
+                    pp[al] = n[2]
+                    break
+                elif n[1] == get_type_id('name'):
+                    pp[al] = n[2]
+                    break
+                else:
+                    pp[al] = n[2]
+            al -= 1
 
         return pp
 

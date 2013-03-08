@@ -42,9 +42,9 @@ class Type(models.Model):
 
 
 class Country(models.Model):
-    iso3166_2 = models.CharField(blank=True, null=True, max_length=2)
-    iso3166_3 = models.CharField(blank=True, null=True, max_length=3)
-    name = models.TextField(blank=True)
+    iso3166_2 = models.CharField(null=True, max_length=2)
+    iso3166_3 = models.CharField(null=True, max_length=3)
+    name = models.TextField()
 
     objects = models.GeoManager()
 
@@ -60,9 +60,9 @@ class Country(models.Model):
 
 
 class Lang(models.Model):
-    iso639_1 = models.CharField(blank=True, null=True, max_length=2)
-    iso639_2 = models.CharField(blank=True, null=True, max_length=3)
-    name = models.TextField(blank=True)
+    iso639_1 = models.CharField(null=True, max_length=2)
+    iso639_2 = models.CharField(null=True, max_length=3)
+    name = models.TextField()
 
     objects = models.GeoManager()
 
@@ -78,14 +78,14 @@ class Lang(models.Model):
 
 class Place(models.Model):
     id = models.BigIntegerField(primary_key=True)
-    osm_id = models.BigIntegerField(blank=True, null=True)
-    type = models.ForeignKey(Type, blank=True, null=True)
-    country = models.ForeignKey(Country, blank=True, null=True)
-    location = models.GeometryField(blank=True, null=True)
-    admin_level = models.IntegerField(blank=True, null=True)
-    population = models.BigIntegerField(blank=True, null=True)
-    parent = models.ForeignKey('self', blank=True, null=True)
-    area = models.FloatField(blank=True, null=True)
+    osm_id = models.BigIntegerField()
+    type = models.ForeignKey(Type, null=True)
+    country = models.ForeignKey(Country, null=True)
+    location = models.GeometryField(null=True)
+    admin_level = models.IntegerField(null=True)
+    population = models.BigIntegerField(null=True)
+    parent = models.ForeignKey('self', null=True)
+    area = models.FloatField(db_index=True, null=True)
 
     objects = models.GeoManager()
 
@@ -101,14 +101,14 @@ class Place(models.Model):
 
 class Postcode(models.Model):
     id = models.BigIntegerField(primary_key=True)
-    osm_id = models.BigIntegerField(blank=True, null=True)
-    type = models.ForeignKey(Type, blank=True, null=True)
-    location = models.GeometryField(blank=True, null=True)
-    main = models.TextField(blank=True, null=True)
-    sup = models.TextField(blank=True, null=True)
-    country = models.ForeignKey(Country, blank=True, null=True)
-    parent = models.ForeignKey(Place, blank=True, null=True)
-    area = models.FloatField(blank=True, null=True)
+    osm_id = models.BigIntegerField()
+    type = models.ForeignKey(Type, null=True)
+    location = models.GeometryField(null=True)
+    main = models.TextField(null=True)
+    sup = models.TextField(null=True)
+    country = models.ForeignKey(Country, null=True)
+    parent = models.ForeignKey(Place, null=True)
+    area = models.FloatField(db_index=True, null=True)
 
     objects = models.GeoManager()
 
@@ -124,11 +124,11 @@ class Postcode(models.Model):
 
 class PlaceName(models.Model):
     id = models.BigIntegerField(primary_key=True)
-    place = models.ForeignKey(Place, blank=True, null=True)
-    lang = models.ForeignKey(Lang, blank=True, null=True)
-    type = models.ForeignKey(Type, blank=True, null=True)
-    name = models.TextField(blank=True)
-    name_hash = models.CharField(blank=True, max_length=32)
+    place = models.ForeignKey(Place)
+    lang = models.ForeignKey(Lang, null=True)
+    type = models.ForeignKey(Type, null=True)
+    name = models.TextField()
+    name_hash = models.CharField(max_length=32)
 
     objects = models.GeoManager()
 
