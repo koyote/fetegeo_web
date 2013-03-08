@@ -25,7 +25,10 @@ function initialise(lonLat) {
             strokeColor: 'black',
             strokeWidth: 2.5,
             strokeOpacity: 0.7,
-            fillOpacity: 0.2
+            fillOpacity: 0.2,
+            externalGraphic: 'http://www.openlayers.org/dev/img/marker.png',
+            graphicWidth: 25,
+            graphicHeight: 25
         }
     });
     map = new OpenLayers.Map('map');
@@ -67,6 +70,7 @@ function populateMap(result) {
         ]
     };
     vector.removeAllFeatures();
+    console.log(geojsonFormat.read(feature));
     vector.addFeatures(geojsonFormat.read(feature));
     map.zoomToExtent(vector.getDataExtent());
 }
@@ -88,32 +92,30 @@ function resultOnclick() {
 }
 
 // Populate Results List with ajax
-jQuery(
-    function () {
-        var form = jQuery("#searchForm");
-        form.submit(function (e) {
-            var sb = jQuery("#searchButton");
-            var ajw = jQuery("#ajaxwrapper");
-
-            sb.attr('disabled', true);
-            ajw.empty();
-            ajw.spin(spinOpts);
-            ajw.load(
-                '/ #ajaxwrapper',
-                form.serializeArray(),
-                function () {
-                    sb.attr('disabled', false);
-                    resultOnclick();
-                }
-            );
-            e.preventDefault();
-        });
-    }
+jQuery(function () {
+           var form = jQuery("#searchForm");
+           var sb = jQuery("#searchButton");
+           var ajw = jQuery("#ajaxwrapper");
+           form.submit(function (e) {
+               sb.attr('disabled', true);
+               ajw.empty();
+               ajw.spin(spinOpts);
+               ajw.load(
+                   '/ #ajaxwrapper',
+                   form.serializeArray(),
+                   function () {
+                       sb.attr('disabled', false);
+                       resultOnclick();
+                   }
+               );
+               e.preventDefault();
+           });
+       }
 );
 
 // JQuery plugin for spinner
-$.fn.spin = function(opts) {
-    this.each(function() {
+$.fn.spin = function (opts) {
+    this.each(function () {
         var $this = $(this),
             data = $this.data();
 

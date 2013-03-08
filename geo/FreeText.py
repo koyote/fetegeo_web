@@ -51,7 +51,7 @@ class FreeText:
         self.admin_levels = admin_levels
 
         results_cache_key = (tuple(langs), find_all, allow_dangling, self.qs, host_country)
-        if queryier.results_cache.has_key(results_cache_key):
+        if results_cache_key in queryier.results_cache:
             return queryier.results_cache[results_cache_key]
 
         # _matches is a list of lists storing all the matched places (and postcodes etc.) at a given
@@ -228,7 +228,7 @@ class FreeText:
             sub_hash = _hash_list(self.split[j:i + 1])
             norm_hash = _hash_list([unidecode(x) for x in self.split[j:i + 1]])
             cache_key = (country, sub_hash)
-            if self.queryier.place_cache.has_key(cache_key):
+            if cache_key in self.queryier.place_cache:
                 place_names = self.queryier.place_cache[cache_key]
             else:
                 if country is not None:
@@ -314,7 +314,7 @@ class FreeText:
     #
     def _find_parent(self, find, place):
         cache_key = (find, place)
-        if self.queryier.parent_cache.has_key(cache_key):
+        if cache_key in self.queryier.parent_cache:
             return self.queryier.parent_cache[cache_key]
 
         if place.parent is None:

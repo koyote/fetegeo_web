@@ -45,7 +45,7 @@ class Cached_Dict:
         self._current = {}
         self._old = {}
 
-    def has_key(self, k):
+    def __contains__(self, k):
         self._lock.acquire()
         try:
             if k in self._current or k in self._old:

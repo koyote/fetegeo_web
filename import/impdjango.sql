@@ -52,12 +52,6 @@ SET area = ST_Area(location);
 UPDATE place
 SET area = ST_Area(location);
 
--- Create postcode area index
-CREATE INDEX on postcode(area);
-
--- Create place area index
-CREATE INDEX on place(area);
-
 -- Vacuum Analyse
 
 -- Computing postcode parents
