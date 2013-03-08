@@ -19,10 +19,10 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  IN THE SOFTWARE.
 """
+from django.db import connection
 
 from geo import Temp_Cache, FreeText
-from place.models import get_place_name, PlaceName, get_type_id
-from django.db import connection
+from place.models import PlaceName, get_type_id
 
 
 class Queryier:
@@ -45,6 +45,9 @@ class Queryier:
         self.merged_location_cache = Temp_Cache.Cached_Dict(Temp_Cache.LARGE_CACHE_SIZE)
 
     def pp_place(self, place):
+        """
+        Pretty print for places. Loops through each place's parent and then sends the ids to pn().
+        """
         langs = self.ft.langs
         cache_key = (tuple(langs), place)
         if cache_key in self.place_pp_cache:
@@ -55,13 +58,29 @@ class Queryier:
             place_ids.append(place.id)
             place = place.parent
 
-        pp = self.pn(place_ids, langs)
+        pp = self._pn(place_ids, langs)
 
         self.place_pp_cache[cache_key] = pp
 
         return pp
 
-    def pn(self, ids, langs):
+    def pp_postcode(self, postcode):
+        """
+        Pretty print for postcodes
+        """
+        if postcode.sup:
+            name = "-".join([postcode.main, postcode.sup])
+        else:
+            name = postcode.main
+
+        pp = {11: name}
+
+        if postcode.parent is not None:
+            pp.update(self.pp_place(postcode.parent))
+
+        return pp
+
+    def _pn(self, ids, langs):
         """
         This complicated method greatly speeds up getting the names of specified parent ids in order.
         It returns a dict of names in order of importance (admin_level).
@@ -84,18 +103,5 @@ class Queryier:
                 else:
                     pp[al] = n[2]
             al -= 1
-
-        return pp
-
-    def pp_postcode(self, postcode):
-        if postcode.sup:
-            name = "-".join([postcode.main, postcode.sup])
-        else:
-            name = postcode.main
-
-        pp = {11: name}
-
-        if postcode.parent is not None:
-            pp.update(self.pp_place(postcode.parent))
 
         return pp
