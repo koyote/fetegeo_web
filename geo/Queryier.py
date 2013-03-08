@@ -91,9 +91,8 @@ class Queryier:
         pp = {}
         al = 10
         names = [(n.place.id, n.type.id, n.name, n.lang) for n in PlaceName.objects.prefetch_related('place', 'type', 'lang').filter(place__id__in=ids)]
-        for i in reversed(ids):
-            n_sub = [n for n in names if n[0] == int(i)]
-            for n in n_sub:
+        for i in ids:
+            for n in [n for n in names if n[0] == int(i)]:
                 if n[3] in langs:
                     pp[al] = n[2]
                     break
