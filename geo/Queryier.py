@@ -50,19 +50,11 @@ class Queryier:
         if cache_key in self.place_pp_cache:
             return self.place_pp_cache[cache_key]
 
-        # Recursive query to get all parents (faster than letting django do place.parent.parent.parent etc.)
-        # This query returns a list of ids in descending order which is essentially the path from place to its parents.
-        c = connection.cursor()
-        c.execute(
-            "WITH RECURSIVE places_cte(id, parent_id, path) "
-            "AS (SELECT tp.id, tp.parent_id, tp.id::TEXT AS path "
-            "FROM place AS tp WHERE tp.parent_id IS NULL UNION ALL "
-            "SELECT c.id,  c.parent_id, (p.path || ',' || c.id) "
-            "FROM places_cte AS p, place AS c WHERE c.parent_id = p.id) "
-            "SELECT path FROM places_cte AS n WHERE n.id = {};".format(place.id)
-        )
+        place_ids = []
+        while place:
+            place_ids.append(place.id)
+            place = place.parent
 
-        place_ids = c.fetchone()[0].split(',')
         pp = self.pn(place_ids, langs)
 
         self.place_pp_cache[cache_key] = pp
