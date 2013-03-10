@@ -69,7 +69,7 @@ class Queryier:
         Pretty print for postcodes
         """
         if postcode.sup:
-            name = "-".join([postcode.main, postcode.sup])
+            name = " ".join([postcode.main, postcode.sup])
         else:
             name = postcode.main
 

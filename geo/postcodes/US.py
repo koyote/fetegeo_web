@@ -50,5 +50,5 @@ def _sub_pc_match(ft, i):
         p = Postcode.objects.filter(main__iexact=main, country=us)
 
     for cnd in p.all():
-        match = Results.RPost_Code(ft, cnd)
+        match = Results.RPost_Code(cnd)
         yield match, i - 1

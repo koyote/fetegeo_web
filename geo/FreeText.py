@@ -245,7 +245,6 @@ class FreeText:
                     continue
                 if postcode is not None:
                     # We've got a match, but we've also previously matched a postcode.
-
                     # First of all, try and weed out whether the postcode and the place we've
                     # tentatively matched contradict each other. Ideally we'd like to match
                     # parent IDs and so on; at the moment we can only check that the postcode
@@ -288,6 +287,7 @@ class FreeText:
                     self._matches[new_i + 1].append(Results.RPlace(place))
 
             if postcode is None:
+                print('pc none: ' + str(i))
                 for sub_postcode, k in self._iter_postcode(i, country):
                     assert k < i
                     if k == -1:
@@ -351,21 +351,10 @@ class FreeText:
             p = Postcode.objects.filter(main__iexact=pc_candidate)
 
         for cnd in p.all():
-
-            if cnd.country in uk + us:
-                # We search for UK/US postcodes elsewhere.
+            if cnd.country in uk or us:
                 continue
-
             match = Results.RPost_Code(cnd)
             yield match, i - 1
-
-        if country not in uk + [None]:
-            for sub_postcode, j in UK.postcode_match(self, i):
-                yield sub_postcode, j
-
-        if country not in us + [None]:
-            for sub_postcode, j in US.postcode_match(self, i):
-                yield sub_postcode, j
 
     def _merge_results(self, q_res):
         """
@@ -385,6 +374,10 @@ class FreeText:
                 continue
             if place.location.geom_type in ('LineString', 'MultiLineString'):
                 for i, p in ls.items():
+
+                    # We don't want to merge different postcodes
+                    if isinstance(r.ri, Results.RPost_Code) and place.sup != p.sup:
+                        continue
                     if place.location.distance(p.location) < 0.025:
                         ls[i].location = p.location.union(place.location)
                         break

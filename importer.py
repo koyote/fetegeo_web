@@ -145,6 +145,6 @@ if __name__ == "__main__":
 
         print("\nImporting data...")
         _import_data(cursor)
-        print("\nExecuting PostGIS statments...")
+        print("\nExecuting PostGIS statements...")
         _execute_postgis(cursor)
         _vacuum_analyze(cursor)

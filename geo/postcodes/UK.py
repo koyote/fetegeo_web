@@ -42,25 +42,17 @@ COUNTRIES = [Country.objects.get(iso3166_2=code) for code in _UK_CODES]
 
 def postcode_match(ft, i):
     assert i > -1
-    countries = COUNTRIES
 
     m = _RE_UK_PARTIAL_POSTCODE.match(ft.split[i])
     if m is not None:
         # We got something that looks as if it might plausibly be the solitary first half of a
-        # postcode (e.g. AA9A), so try matching it on its own.
+        # postcode (e.g. AA9A). Lets return everything we can find!
 
-        p = Postcode.objects.filter(country__in=countries, main__iexact=ft.split[i], sup__isnull=True)
+        p = Postcode.objects.filter(country__in=COUNTRIES, main__iexact=ft.split[i])
 
-        if p.count() == 0:
-            # Since we couldn't find AA9A on its own, see if there are any postcodes with an
-            # arbitrary supplementary (e.g. AA9A 2AA). This is likely to return multiple matches
-            # if AA9A is a valid postcode.
-            p = Postcode.objects.filter(country__in=countries, main__iexact=ft.split[i])
-
-        if p.count() > 0:
+        for pc in p.all():
             # We might have got multiple matches, in which case we arbitrarily pick the first one.
-            fst = p[0]
-            match = Results.RPost_Code(ft, fst)
+            match = Results.RPost_Code(pc)
             yield match, i - 1
 
     if i == 0:
@@ -68,46 +60,43 @@ def postcode_match(ft, i):
         # of matching anything hereon in.
         return
 
-    # OK, we're now going to try and match a "full postcode" (e.g. of the form SW1 2AA). Before we
-    # bother trying to do that, we see if the two contributing elements of the split look like they
-    # could be a valid postcode. If they don't, then there's no point in going any further.
-
+    # OK, we're now going to try and match a "full postcode" (e.g. of the form SW1 2AA).
     main = ft.split[i - 1]
     sup = ft.split[i]
-    m = _RE_UK_FULL_POSTCODE.match("{0} {1}".format(main, sup))
-
-    if m is None:
-        return
 
     # We now try and match a "full postcode" (e.g. of the form SW1 2AA). Because we only have partial
     # UK postcode data, we first of all try matching exactly what is given, gradually backing off if
-    # that isn't possible. Since all of these matches are against the same string, as soon as we find
-    # a match, we don't try searching any further.
-    p = Postcode.objects.filter(country__in=countries, main__iexact=ft.split[i - 1], sup__iexact=ft.split[i])
+    # that isn't possible.
+    m = _RE_UK_FULL_POSTCODE.match("{0} {1}".format(main, sup))
+    if m is not None:
+        p = Postcode.objects.filter(country__in=COUNTRIES, main__iexact=main, sup__iexact=sup)
 
-    if p.count() > 0:
-        fst = p[0]
-        match = Results.RPost_Code(ft, fst)
-        yield match, i - 2
+        for pc in p.all():
+            match = Results.RPost_Code(pc)
+            yield match, i - 2
+
+        # Couldn't find exact postcode, lets try and find a partial sup for the postcode by reducing sup by one each time.
+        if not p.exists():
+            i = 1
+            while i < 3 and not p.exists():
+                p = Postcode.objects.filter(country__in=COUNTRIES, main__iexact=main, sup__istartswith=sup[:i])
+                for pc in p.all():
+                    match = Results.RPost_Code(pc)
+                    yield match, i - 2
+                i += 1
         return
 
-    # Try matching the main part of the postcode and the first character of the supplementary
-    # part. e.g. for AA9A 9AA try matching AA9A 9.
-
-    p = Postcode.objects.filter(country__in=countries, main__iexact=ft.split[i - 1], sup__iexact=ft.split[i][0])
-
-    if p.count() > 0:
-        fst = p[0]
-        match = Results.RPost_Code(ft, fst)
+    # Only a partial sup was given as a query (SW3 4, for example), so let's try and find all postcodes that match this.
+    p = Postcode.objects.filter(country__in=COUNTRIES, main__iexact=main, sup__istartswith=sup)
+    for pc in p.all():
+        match = Results.RPost_Code(pc)
         yield match, i - 2
-        return
 
     # Now we're struggling - try matching the main part of the postcode and ignore the supplementary
-    # part. This will probably return multiple matches.
+    # part (i.e. we're ignoring the sup part and will just search for the main part)
+    if not p.exists():
+        p = Postcode.objects.filter(country__in=COUNTRIES, main__iexact=main)
 
-    p = Postcode.objects.filter(country__in=countries, main__iexact=ft.split[i - 1])
-
-    if p.count() > 0:
-        fst = p[0]
-        match = Results.RPost_Code(ft, fst)
-        yield match, i - 2
+        for pc in p.all():
+            match = Results.RPost_Code(pc)
+            yield match, i - 2
