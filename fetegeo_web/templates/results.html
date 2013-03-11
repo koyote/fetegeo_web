@@ -6,14 +6,15 @@
         <strong>No Results for '<em style="color:#687F80;">{{ q }}</em>' :(</strong>
 
     {% elif place_names or postcode_names %}
+        {% load custom_tags %}
         <h2>Results</h2>
 
         {% if place_names %}
             <h3>Places</h3>
             <div class='result_list'>
-                {% for id, name in place_names.items %}
-                    <div id='{{ id }}' class='results linkOFF' name='Place'>
-                        <span>{{ name }}</span>
+                {% for place in places %}
+                    <div id='{{ place.id }}' class='results linkOFF' name='Place'>
+                        <span>{{ place_names|get_item:place.id }}</span>
                     </div>
                 {% endfor %}
             </div>
@@ -22,9 +23,9 @@
         {% if postcode_names %}
             <h3>Postcodes</h3>
             <div class='result_list'>
-                {% for id, name in postcode_names.items %}
-                    <div id='{{ id }}' class='results linkOFF' name='Postcode'>
-                        <span>{{ name }}</span>
+                {% for place in places %}
+                    <div id='{{ place.id }}' class='results linkOFF' name='Postcode'>
+                        <span>{{ postcode_names|get_item:place.id }}</span>
                     </div>
                 {% endfor %}
             </div>

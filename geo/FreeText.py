@@ -101,73 +101,27 @@ class FreeText:
 
         # OK, we've now done all the matching, so we can select the best matches and turn them into
         # full results.
-
         results = self._matches[self._longest_match]
 
+        # Create a new list only having places that match our host country.
         if self.host_country is not None and not self.find_all:
-            # Create a new list only having places that match our host country.
             results[:] = [r for r in results if r.place.country == self.host_country]
 
-        # Now we try to find the best match.
-
-        found_best = False
-        if self.host_country is not None:
-            # If a host country is specified, we first of all find the best match within the country.
-            # If there are no results at all within the country then the generic best finder below
-            # will kick into action.
-            best_i = None
-            for i in range(len(results)):
-                if results[i].place.country == self.host_country:
-                    if best_i is None:
-                        best_i = i
-                    elif isinstance(results[best_i], Results.RPlace) and isinstance(results[i], Results.RPlace):
-                        if not results[best_i].place.population and results[i].place.population:
-                            best_i = i
-                        elif results[best_i].place.population and results[i].place.population:
-                            if results[best_i].place.population < results[i].place.population:
-                                best_i = i
-                    elif isinstance(results[best_i], Results.RPost_Code) and isinstance(results[i], Results.RPlace):
-                        best_i = i
-                    elif isinstance(results[best_i], Results.RPost_Code) and isinstance(results[i], Results.RPost_Code):
-                        pass
-
-            if best_i is not None:
-                best = results[best_i]
-                del results[best_i]
-                results.insert(0, best)
-                found_best = True
-
-        if not found_best:
-            # Generic 'best finder'.
-            best_i = None
-            for i in range(len(results)):
-                if best_i is None:
-                    best_i = i
-                elif isinstance(results[best_i], Results.RPlace) and isinstance(results[i], Results.RPlace):
-                    if not results[best_i].place.population and results[i].place.population:
-                        best_i = i
-                    elif results[best_i].place.population and results[i].place.population:
-                        if results[best_i].place.population < results[i].place.population:
-                            best_i = i
-                elif isinstance(results[best_i], Results.RPost_Code) and isinstance(results[i], Results.RPlace):
-                    best_i = i
-                elif isinstance(results[best_i], Results.RPost_Code) and isinstance(results[i], Results.RPost_Code):
-                    pass
-
-            if best_i is not None:
-                best = results[best_i]
-                del results[best_i]
-                results.insert(0, best)
-
+        # Find dangling if present
         if self._longest_match > 0:
             dangling = self.qs[:self.split_indices[self._longest_match - 1][1]]
         else:
             dangling = ""
 
-        final_results = self._merge_results({m.osm_id: Results.Result(m, dangling) for m in results})
-        queryier.results_cache[results_cache_key] = final_results
+        # Merge streets
+        place_names, postcode_names, merged_places = self._merge_results({m.osm_id: Results.Result(m, dangling) for m in results})
 
-        return final_results
+        # Sort results
+        sorted_places = self._sort_results(merged_places)
+
+        queryier.results_cache[results_cache_key] = place_names, postcode_names, sorted_places
+
+        return place_names, postcode_names, sorted_places
 
     def _iter_country(self):
         if self.host_country is not None:
@@ -194,8 +148,7 @@ class FreeText:
         # specify the country name.
         sub_hash = _hash_wd(self.split[-1])
         norm_hash = _hash_wd(unidecode(self.split[-1]))
-        country_list = PlaceName.objects.prefetch_related('place').filter(Q(name_hash=sub_hash) | Q(name_hash=norm_hash),
-                                                                          Q(type__id=get_type_id("country")))
+        country_list = PlaceName.objects.prefetch_related('place').filter(Q(name_hash=sub_hash) | Q(name_hash=norm_hash), Q(type__id=get_type_id("country")))
 
         done = set()
         for cnd in country_list:
@@ -299,10 +252,10 @@ class FreeText:
                             assert sub_sub_postcode is sub_postcode
                             yield sub_places, sub_sub_postcode, k
 
-    #
-    # Return True if 'find' is a parent of 'place'.
-    #
     def _find_parent(self, find, place):
+        """
+        Return True if 'find' is a parent of 'place'.
+        """
         cache_key = (find, place)
         if cache_key in self.queryier.parent_cache:
             return self.queryier.parent_cache[cache_key]
@@ -399,6 +352,59 @@ class FreeText:
                     final_places.append(p)
 
         return place_names, postcode_names, final_places
+
+    def _sort_results(self, results):
+        found_best = False
+
+        if self.host_country is not None:
+            # If a host country is specified, we first of all find the best match within the country.
+            # If there are no results at all within the country then the generic best finder below
+            # will kick into action.
+            best_i = None
+            for i in range(len(results)):
+                if results[i].country == self.host_country:
+                    if best_i is None:
+                        best_i = i
+                    elif isinstance(results[best_i], Place) and isinstance(results[i], Place):
+                        if not results[best_i].population and results[i].population:
+                            best_i = i
+                        elif results[best_i].population and results[i].population:
+                            if results[best_i].population < results[i].population:
+                                best_i = i
+                    elif isinstance(results[best_i], Postcode) and isinstance(results[i], Place):
+                        best_i = i
+                    elif isinstance(results[best_i], Postcode) and isinstance(results[i], Postcode):
+                        pass
+
+            if best_i is not None:
+                best = results[best_i]
+                del results[best_i]
+                results.insert(0, best)
+                found_best = True
+
+        if not found_best:
+            # Generic 'best finder'.
+            best_i = None
+            for i in range(len(results)):
+                if best_i is None:
+                    best_i = i
+                elif isinstance(results[best_i], Place) and isinstance(results[i], Place):
+                    if not results[best_i].population and results[i].population:
+                        best_i = i
+                    elif results[best_i].population and results[i].population:
+                        if results[best_i].population < results[i].population:
+                            best_i = i
+                elif isinstance(results[best_i], Postcode) and isinstance(results[i], Place):
+                    best_i = i
+                elif isinstance(results[best_i], Postcode) and isinstance(results[i], Postcode):
+                    pass
+
+            if best_i is not None:
+                best = results[best_i]
+                del results[best_i]
+                results.insert(0, best)
+
+        return results
 
 #
 # Cleanup input strings, stripping extraneous spaces etc.
