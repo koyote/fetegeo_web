@@ -24,16 +24,12 @@ import hashlib
 import re
 
 from django.contrib.gis.db.models import Q
-import sys
 from unidecode import unidecode
 
 from place.models import PlaceName, Country, Postcode, Lang, get_type_id, Place
 from geo import Results
 from geo.postcodes import UK, US
 from django.core.cache import cache
-from importer import Timer
-import cProfile
-from line_profiler import LineProfiler
 
 
 _RE_IRRELEVANT_CHARS = re.compile("[,\\n\\r\\t;()]")
@@ -109,15 +105,8 @@ class FreeText:
         results = self._matches[self._longest_match]
 
         if self.host_country is not None and not self.find_all:
-            # If we're only trying to find matches within a given country, then remove any
-            # matches that come from other countries. This may seem inefficient, but it's
-            # easier than having this logic every bit of code that adds matches.
-            i = 0
-            while i < len(results):
-                if results[i].place.country != self.host_country:
-                    del results[i]
-                else:
-                    i += 1
+            # Create a new list only having places that match our host country.
+            results[:] = [r for r in results if r.place.country == self.host_country]
 
         # Now we try to find the best match.
 
@@ -198,18 +187,18 @@ class FreeText:
                 iso2_cnd = "gb"
 
             country = Country.objects.filter(iso3166_2__iexact=iso2_cnd)
-            if country.count() > 0:
-                country = country[0]
-                yield country, len(self.split) - 2
+            if country.exists():
+                yield country[0], len(self.split) - 2
 
         # Finally try and match a full country name. Note that we're agnostic over the language used to
         # specify the country name.
-        hashed_token = _hash_wd(self.split[-1])
-        hashed_norm = _hash_wd(unidecode(self.split[-1]))
-        country_list = PlaceName.objects.filter(Q(name_hash=hashed_token) | Q(name_hash=hashed_norm), Q(type__id=get_type_id("country")))
+        sub_hash = _hash_wd(self.split[-1])
+        norm_hash = _hash_wd(unidecode(self.split[-1]))
+        country_list = PlaceName.objects.prefetch_related('place').filter(Q(name_hash=sub_hash) | Q(name_hash=norm_hash),
+                                                                          Q(type__id=get_type_id("country")))
 
         done = set()
-        for cnd in country_list.all():
+        for cnd in country_list:
             new_i = _match_end_split([unidecode(x) for x in self.split], len(self.split) - 1, unidecode(cnd.name))
             country = cnd.place.country
             done_key = (country, new_i)
@@ -255,7 +244,7 @@ class FreeText:
                         continue
 
                 # Ensure that if there are parent places, then this candidate is a valid child.
-                if len(parent_places) > 0 and not self._find_parent(parent_places[0], p.place):
+                if parent_places and not self._find_parent(parent_places[0], p.place):
                     continue
 
                 new_i = _match_end_split([unidecode(x) for x in self.split], i, unidecode(p.name))
@@ -347,11 +336,11 @@ class FreeText:
             pc_candidate = pc_candidate.split('-')[1]
 
         if country is not None:
-            p = Postcode.objects.prefetch_related('country').filter(main__iexact=pc_candidate, country=country)
+            p = Postcode.objects.prefetch_related('country').only().filter(main__iexact=pc_candidate, country=country)
         else:
-            p = Postcode.objects.prefetch_related('country').filter(main__iexact=pc_candidate)
+            p = Postcode.objects.prefetch_related('country').only().filter(main__iexact=pc_candidate)
 
-        for cnd in p.all():
+        for cnd in p:
             if cnd.country in (uk or us):
                 continue
 

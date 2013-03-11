@@ -49,6 +49,6 @@ def _sub_pc_match(ft, i):
     if sup is None or not p:
         p = Postcode.objects.filter(main__iexact=main, country=us)
 
-    for cnd in p.all():
+    for cnd in p:
         match = Results.RPost_Code(cnd)
         yield match, i - 1

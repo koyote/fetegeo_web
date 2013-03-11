@@ -50,7 +50,7 @@ def postcode_match(ft, i):
 
         p = Postcode.objects.filter(country__in=COUNTRIES, main__iexact=ft.split[i])
 
-        for pc in p.all():
+        for pc in p:
             match = Results.RPost_Code(pc)
             yield match, i - 1
 
@@ -73,7 +73,7 @@ def postcode_match(ft, i):
     if m is not None:
         p = Postcode.objects.filter(country__in=COUNTRIES, main__iexact=main, sup__iexact=sup)
 
-        for pc in p.all():
+        for pc in p:
             match = Results.RPost_Code(pc)
             yield match, i - 2
 
@@ -82,7 +82,7 @@ def postcode_match(ft, i):
             i = 1
             while i < 3 and not p.exists():
                 p = Postcode.objects.filter(country__in=COUNTRIES, main__iexact=main, sup__istartswith=sup[:i])
-                for pc in p.all():
+                for pc in p:
                     match = Results.RPost_Code(pc)
                     yield match, i - 2
                 i += 1
@@ -90,7 +90,7 @@ def postcode_match(ft, i):
 
     # Only a partial sup was given as a query (SW3 4, for example), so let's try and find all postcodes that match this.
     p = Postcode.objects.filter(country__in=COUNTRIES, main__iexact=main, sup__istartswith=sup)
-    for pc in p.all():
+    for pc in p:
         match = Results.RPost_Code(pc)
         yield match, i - 2
 
@@ -99,6 +99,6 @@ def postcode_match(ft, i):
     if not p.exists():
         p = Postcode.objects.filter(country__in=COUNTRIES, main__iexact=main)
 
-        for pc in p.all():
+        for pc in p:
             match = Results.RPost_Code(pc)
             yield match, i - 2
