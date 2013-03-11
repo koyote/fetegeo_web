@@ -54,3 +54,4 @@ class RPost_Code:
         self.place = postcode
         self.location = postcode.location
         self.osm_id = postcode.osm_id
+        self.country_id = postcode.country_id

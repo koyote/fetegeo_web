@@ -28,6 +28,7 @@ import subprocess
 import shlex
 import argparse
 import sys
+from line_profiler import LineProfiler
 
 os.environ['DJANGO_SETTINGS_MODULE'] = 'fetegeo_web.settings'
 from django.db import connection

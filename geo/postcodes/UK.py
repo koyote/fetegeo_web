@@ -51,7 +51,6 @@ def postcode_match(ft, i):
         p = Postcode.objects.filter(country__in=COUNTRIES, main__iexact=ft.split[i])
 
         for pc in p.all():
-            # We might have got multiple matches, in which case we arbitrarily pick the first one.
             match = Results.RPost_Code(pc)
             yield match, i - 1
 
@@ -67,7 +66,10 @@ def postcode_match(ft, i):
     # We now try and match a "full postcode" (e.g. of the form SW1 2AA). Because we only have partial
     # UK postcode data, we first of all try matching exactly what is given, gradually backing off if
     # that isn't possible.
+    if _RE_UK_PARTIAL_POSTCODE.match(main) is None or 0 >= len(sup) > 3:
+        return
     m = _RE_UK_FULL_POSTCODE.match("{0} {1}".format(main, sup))
+
     if m is not None:
         p = Postcode.objects.filter(country__in=COUNTRIES, main__iexact=main, sup__iexact=sup)
 

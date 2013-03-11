@@ -90,7 +90,7 @@ class Queryier:
         # The OSM admin level is sometimes set high for simple Nodes; we do not want that, so we define our own admin_level
         pp = {}
         al = 10
-        names = [(n.place.id, n.type.id, n.name, n.lang) for n in PlaceName.objects.prefetch_related('place', 'type', 'lang').filter(place__id__in=ids)]
+        names = [(n.place_id, n.type_id, n.name, n.lang) for n in PlaceName.objects.only().filter(place__id__in=ids)]
         for i in ids:
             for n in [n for n in names if n[0] == int(i)]:
                 if n[3] in langs:

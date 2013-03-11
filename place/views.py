@@ -37,6 +37,7 @@ from place.forms import IndexForm
 from place.models import Lang, get_country_name_lang, Country
 from place.serialiser import ResultSerialiser, SerialisableResult
 from importer import Timer
+import cProfile
 
 
 _DEFAULT_LANG = Lang.objects.get(iso639_1='EN').id
