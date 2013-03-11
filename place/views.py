@@ -68,11 +68,12 @@ def index(request):
                 error = True
             else:
                 with Timer():
-                    place_names, postcode_names, places = q.search([lang], find_all, dangling, query, ctry)
-                if not places:
+                    result = q.search([lang], find_all, dangling, query, ctry)
+                if not result:
                     return _rtr(request, renderHtmls, {'no_result': True, 'q': query, 'user_lon_lat': user_lon_lat})
                 else:
-                    return _rtr(request, renderHtmls, {'place_names': place_names, 'postcode_names': postcode_names, 'places': places, 'user_lon_lat': user_lon_lat})
+                    return _rtr(request, renderHtmls,
+                                {'place_names': result[0], 'postcode_names': result[1], 'places': result[2], 'user_lon_lat': user_lon_lat})
     else:
         form = IndexForm()
 

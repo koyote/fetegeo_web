@@ -115,7 +115,6 @@ class FreeText:
 
         # Merge streets
         place_names, postcode_names, merged_places = self._merge_results({m.osm_id: Results.Result(m, dangling) for m in results})
-
         # Sort results
         sorted_places = self._sort_results(merged_places)
 
@@ -354,55 +353,14 @@ class FreeText:
         return place_names, postcode_names, final_places
 
     def _sort_results(self, results):
-        found_best = False
+        """
+        Generic sorter sorts the results array giving high populations priority.
+        It also gives priority to places that are in the host_country.
+        """
 
+        results.sort(key=lambda x: -x.population if x.population else 0)
         if self.host_country is not None:
-            # If a host country is specified, we first of all find the best match within the country.
-            # If there are no results at all within the country then the generic best finder below
-            # will kick into action.
-            best_i = None
-            for i in range(len(results)):
-                if results[i].country == self.host_country:
-                    if best_i is None:
-                        best_i = i
-                    elif isinstance(results[best_i], Place) and isinstance(results[i], Place):
-                        if not results[best_i].population and results[i].population:
-                            best_i = i
-                        elif results[best_i].population and results[i].population:
-                            if results[best_i].population < results[i].population:
-                                best_i = i
-                    elif isinstance(results[best_i], Postcode) and isinstance(results[i], Place):
-                        best_i = i
-                    elif isinstance(results[best_i], Postcode) and isinstance(results[i], Postcode):
-                        pass
-
-            if best_i is not None:
-                best = results[best_i]
-                del results[best_i]
-                results.insert(0, best)
-                found_best = True
-
-        if not found_best:
-            # Generic 'best finder'.
-            best_i = None
-            for i in range(len(results)):
-                if best_i is None:
-                    best_i = i
-                elif isinstance(results[best_i], Place) and isinstance(results[i], Place):
-                    if not results[best_i].population and results[i].population:
-                        best_i = i
-                    elif results[best_i].population and results[i].population:
-                        if results[best_i].population < results[i].population:
-                            best_i = i
-                elif isinstance(results[best_i], Postcode) and isinstance(results[i], Place):
-                    best_i = i
-                elif isinstance(results[best_i], Postcode) and isinstance(results[i], Postcode):
-                    pass
-
-            if best_i is not None:
-                best = results[best_i]
-                del results[best_i]
-                results.insert(0, best)
+            results.sort(key=lambda x: (x.country is None, x.country == self.host_country))
 
         return results
 
