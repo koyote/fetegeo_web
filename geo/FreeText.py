@@ -354,11 +354,13 @@ class FreeText:
 
     def _sort_results(self, results):
         """
-        Generic sorter sorts the results array giving high populations priority.
-        It also gives priority to places that are in the host_country.
+        Generic sorter sorts the results list giving high populations priority.
+        Next it sorts in decreasing area and length size.
+        If places are in the host_country, those will be at the top of the list.
         """
 
-        results.sort(key=lambda x: -x.population if x.population else 0)
+        results.sort(
+            key=lambda x: (-x.population if x.population else 0, -x.area if x.area else 0, -x.location.length if (x.location and x.location.length) else 0))
         if self.host_country is not None:
             results.sort(key=lambda x: (x.country is None, x.country == self.host_country))
 

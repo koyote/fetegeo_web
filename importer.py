@@ -28,11 +28,10 @@ import subprocess
 import shlex
 import argparse
 import sys
-from line_profiler import LineProfiler
-
 os.environ['DJANGO_SETTINGS_MODULE'] = 'fetegeo_web.settings'
 from django.db import connection
 from django.core.management import call_command
+from place.models import Place
 
 
 _TABLES = ['type', 'country', 'lang', 'place', 'postcode', 'place_name']
@@ -118,6 +117,22 @@ def _vacuum_analyze(cursor):
         connection.connection.set_isolation_level(old_iso_level)
 
 
+def _population():
+    """
+    Populates the population field of a parent field missing its population with its child's population.
+    We check for an area greater than 0 in case of single Nodes designating whole countries (whose population we don't want propagated).
+    """
+    with Timer():
+        print('Propagating populations...')
+        for place in Place.objects.filter(population__isnull=False, area__gt=0):
+            pop = place.population
+            place = place.parent
+            while place and (not place.population or place.population < pop):
+                place.population = pop
+                place.save()
+                place = place.parent
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-f', '--osm-file', type=str, help='Specify an OSM file to process with osmosis. (.pbf highly preferred!)')
@@ -149,3 +164,4 @@ if __name__ == "__main__":
         print("\nExecuting PostGIS statements...")
         _execute_postgis(cursor)
         _vacuum_analyze(cursor)
+        _population()
