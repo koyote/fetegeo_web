@@ -352,8 +352,9 @@ class FreeText:
             p = Postcode.objects.prefetch_related('country').filter(main__iexact=pc_candidate)
 
         for cnd in p.all():
-            if cnd.country in uk or us:
+            if cnd.country in (uk or us):
                 continue
+
             match = Results.RPost_Code(cnd)
             yield match, i - 1
 

@@ -168,7 +168,7 @@ def get_type_id(type_name):
     Return the id of a given type. The type is also saved in a 'cache'
     """
     if type_name not in type_ids:
-        type_ids[type_name] = Type.objects.get(name=type_name).id
+        type_ids[type_name] = Type.objects.only('id').get(name=type_name).id
     return type_ids[type_name]
 
 
