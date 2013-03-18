@@ -41,7 +41,7 @@ python importer.py -f file_to_be_imported.osm.pbf
   If the Osmosis task has already been run, the database import script can be run without arguments to do a simple database import from the files inside ```import/```.
   ###WARNING
   The importer might take hours on a large dataset due to the database postprocessing commands.
-
+- Finally, the Django webview uses an API called [Pygeoip](http://appliedsec.github.com/pygeoip/) which is used to determine the home country of a visitor. This library is based on the MaxMind API and requires the MaxMind dataset. As such GeoLiteCity.dat should be downloaded from [here](http://dev.maxmind.com/geoip/geolite) and placed into ```place/geoip/```.
 
 ##Usage
 fetegeo_web can be started like any other Django application, either locally with ```python manage.py runserver``` or using WSGI plugins and a webserver like Apache or Nginx.
