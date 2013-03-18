@@ -31,6 +31,7 @@ pip install -r requirements.txt
 ```
 
 - Edit ```fetegeo_web/settings.py``` and set your database username, password and the name of the database created above.
+  It is also important that you change the SECRET_KEY if you plan on running the webserver in production.
 
 - Populate the database with data retrieved from the OpenStreetMap project by running the importer python script:
 ```
@@ -38,10 +39,12 @@ python importer.py -f file_to_be_imported.osm.pbf
 ```
   The processed PostgreSQL import files can be found in ```import/```.
   If the Osmosis task has already been run, the database import script can be run without arguments to do a simple database import from the files inside ```import/```.
+  ###WARNING
+  The importer might take hours on a large dataset due to the database postprocessing commands.
 
 
 ##Usage
-fetegeo_web can be started like any other Django application, either locally with ```python manage.py runserver 8000``` or using WSGI plugins and a webserver like Apache or Nginx.
+fetegeo_web can be started like any other Django application, either locally with ```python manage.py runserver``` or using WSGI plugins and a webserver like Apache or Nginx.
 
 
 ##Licence
