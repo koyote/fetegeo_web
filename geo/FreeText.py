@@ -25,11 +25,11 @@ import re
 
 from django.contrib.gis.db.models import Q
 from unidecode import unidecode
+from django.core.cache import cache
 
 from place.models import PlaceName, Country, Postcode, Lang, get_type_id, Place
 from geo import Results
 from geo.postcodes import UK, US
-from django.core.cache import cache
 
 
 _RE_IRRELEVANT_CHARS = re.compile("[,\\n\\r\\t;()]")
@@ -113,8 +113,10 @@ class FreeText:
         else:
             dangling = ""
 
-        # Merge streets
-        place_names, postcode_names, merged_places = self._merge_results({m.osm_id: Results.Result(m, dangling) for m in results})
+        # Merge results
+        result_map = {m.osm_id: Results.Result(m, dangling) for m in results}
+        place_names, postcode_names, merged_places = self._merge_results(result_map)
+
         # Sort results
         sorted_places = self._sort_results(merged_places)
 
@@ -251,25 +253,6 @@ class FreeText:
                             assert sub_sub_postcode is sub_postcode
                             yield sub_places, sub_sub_postcode, k
 
-    def _find_parent(self, find, place):
-        """
-        Return True if 'find' is a parent of 'place'.
-        """
-        cache_key = (find, place)
-        if cache_key in self.queryier.parent_cache:
-            return self.queryier.parent_cache[cache_key]
-
-        if place.parent is None:
-            self.queryier.parent_cache[cache_key] = False
-            return False
-        elif place.parent == find:
-            self.queryier.parent_cache[cache_key] = True
-            return True
-        else:
-            r = self._find_parent(find, place.parent)
-            self.queryier.parent_cache[cache_key] = r
-            return r
-
     def _iter_postcode(self, i, country):
         uk = UK.COUNTRIES
         us = [Country.objects.get(iso3166_2="US")]
@@ -299,6 +282,25 @@ class FreeText:
             match = Results.RPost_Code(cnd)
             yield match, i - 1
 
+    def _find_parent(self, find, place):
+        """
+        Return True if 'find' is a parent of 'place'.
+        """
+        cache_key = (find, place)
+        if cache_key in self.queryier.parent_cache:
+            return self.queryier.parent_cache[cache_key]
+
+        if place.parent is None:
+            self.queryier.parent_cache[cache_key] = False
+            return False
+        elif place.parent == find:
+            self.queryier.parent_cache[cache_key] = True
+            return True
+        else:
+            r = self._find_parent(find, place.parent)
+            self.queryier.parent_cache[cache_key] = r
+            return r
+
     def _merge_results(self, q_res):
         """
         Method takes a dict of osm_id:results produced by the search command.
@@ -306,8 +308,6 @@ class FreeText:
         It will also ignore any duplicate places.
         The method returns a list of places and a dict of place.id's to pretty print place_names.
         """
-        place_names = {}
-        postcode_names = {}
         ls = {}
         places = []
 
@@ -315,6 +315,7 @@ class FreeText:
             place = r.ri.place
             if place.location is None:
                 continue
+                # Find lines and merge (union) them if their distance is close enough to be considered the same location
             if place.location.geom_type in ('LineString', 'MultiLineString'):
                 for i, p in ls.items():
 
@@ -332,11 +333,14 @@ class FreeText:
 
         places.extend(ls.values())
 
-        # Cache locations in order to retrieve them easily onclick.
+        place_names = {}
+        postcode_names = {}
         final_places = []
+
         for p in places:
-            key = str(p.id) + p.__class__.__name__
-            cache.set(key, p.location.geojson, 9999)
+            # Cache locations in order to retrieve them easily onclick in the webview.
+            key = str(p.id) + p.__class__.__name__  # we append the result type as a postcode might have the same id as a place
+            cache.set(key, p.location.geojson, 99999)
 
             # Find the pretty print names for the places
             if isinstance(p, Place):
@@ -361,6 +365,7 @@ class FreeText:
 
         results.sort(
             key=lambda x: (-x.population if x.population else 0, -x.area if x.area else 0, -x.location.length if (x.location and x.location.length) else 0))
+        # Put results from the host_country first.
         if self.host_country is not None:
             results.sort(key=lambda x: (x.country is None, x.country == self.host_country))
 

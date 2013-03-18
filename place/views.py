@@ -36,8 +36,6 @@ from geo import Queryier
 from place.forms import IndexForm
 from place.models import Lang, get_country_name_lang, Country
 from place.serialiser import ResultSerialiser, SerialisableResult
-from importer import Timer
-import cProfile
 
 
 _DEFAULT_LANG = Lang.objects.get(iso639_1='EN').id
@@ -67,8 +65,7 @@ def index(request):
             if not query:
                 error = True
             else:
-                with Timer():
-                    result = q.search([lang], find_all, dangling, query, ctry)
+                result = q.search([lang], find_all, dangling, query, ctry)
                 if not result:
                     return _rtr(request, renderHtmls, {'no_result': True, 'q': query, 'user_lon_lat': user_lon_lat})
                 else:

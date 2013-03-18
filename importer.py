@@ -46,7 +46,7 @@ class Timer:
     def __enter__(self):
         self.start = time.time()
 
-    def __exit__(self, *args):
+    def __exit__(self):
         interval = time.time() - self.start
         if interval < 60:
             print("Time: {:.2f} seconds.".format(interval))

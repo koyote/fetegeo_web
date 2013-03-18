@@ -19,7 +19,6 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  IN THE SOFTWARE.
 """
-from django.db import connection
 
 from geo import Temp_Cache, FreeText
 from place.models import PlaceName, get_type_id
@@ -53,12 +52,13 @@ class Queryier:
         if cache_key in self.place_pp_cache:
             return self.place_pp_cache[cache_key]
 
+        # Retrieve all parent ids
         place_ids = []
         while place:
             place_ids.append(place.id)
             place = place.parent
 
-        pp = self._pn(place_ids, langs)
+        pp = self._pretty_name(place_ids, langs)
 
         self.place_pp_cache[cache_key] = pp
 
@@ -80,7 +80,7 @@ class Queryier:
 
         return pp
 
-    def _pn(self, ids, langs):
+    def _pretty_name(self, ids, langs):
         """
         This complicated method greatly speeds up getting the names of specified parent ids in order.
         It returns a dict of names in order of importance (admin_level).

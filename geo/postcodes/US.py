@@ -37,6 +37,8 @@ def postcode_match(ft, i):
 
 def _sub_pc_match(ft, i):
     us = Country.objects.get(iso3166_2="US")
+
+    # Do we have a US extended postcode? (p.ex. 99999-9999)
     if _RE_US_ZIP_PLUS4.match(ft.split[i]):
         main, sup = ft.split[i].split('-')
     elif _RE_US_ZIP.match(ft.split[i]):

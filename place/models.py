@@ -149,7 +149,7 @@ def get_country_name_lang(query, langs):
     Returns the country name in a specific language.
     If it can't find it it will return the name in English.
     """
-    country = PlaceName.objects.filter(type__id=get_type_id('country'), name__iexact=query, lang__in=langs)  # TODO: Why no results?
+    country = PlaceName.objects.filter(type__id=get_type_id('country'), name__iexact=query, lang__in=langs)
     if not country:
         country = PlaceName.objects.filter(type__id=get_type_id('country'), name__iexact=query)
         if not country:
