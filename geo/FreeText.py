@@ -201,7 +201,7 @@ class FreeText:
 
             for p in place_names:
                 # Don't get caught out by e.g. a capital city having the same name as a state.
-                if p.place_id in parent_places:
+                if p.place in parent_places:
                     continue
                 if postcode is not None:
                     # We've got a match, but we've also previously matched a postcode.
@@ -218,7 +218,7 @@ class FreeText:
 
                 new_i = _match_end_split([unidecode(x) for x in self.split], i, unidecode(p.name))
                 assert new_i < i
-                new_parent_places = [p.place_id] + parent_places
+                new_parent_places = [p.place] + parent_places
                 record_match = False
                 if new_i == -1:
                     record_match = True
