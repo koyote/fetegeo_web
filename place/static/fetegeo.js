@@ -70,7 +70,6 @@ function populateMap(result) {
         ]
     };
     vector.removeAllFeatures();
-    console.log(geojsonFormat.read(feature));
     vector.addFeatures(geojsonFormat.read(feature));
     map.zoomToExtent(vector.getDataExtent());
 }
@@ -83,11 +82,23 @@ function resultOnclick() {
             if (result) {
                 populateMap(result);
             }
-        }).hover(function () {
-                     this.className = this.className.replace('OFF', 'ON');
-                 }, function () {
-                     this.className = this.className.replace('ON', 'OFF');
-                 });
+        });
+    });
+}
+
+// Click handler for page numbers
+function pageOnclick() {
+    var startEl = jQuery("#id_start");
+    var limit = jQuery("#id_limit").val();
+    var form = jQuery("#searchForm");
+
+    $('div[class^=page]').each(function () {
+        var pageNum = parseInt($(this).text());
+        $(this).click(function (e) {
+            startEl.val(limit * (pageNum - 1));
+            form.submit();
+            startEl.val(0); // needed for the search button to operate properly again
+        });
     });
 }
 
@@ -106,6 +117,7 @@ jQuery(function () {
                    function () {
                        sb.attr('disabled', false);
                        resultOnclick();
+                       pageOnclick();
                    }
                );
                e.preventDefault();

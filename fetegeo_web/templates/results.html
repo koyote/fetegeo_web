@@ -31,5 +31,12 @@
             </div>
         {% endif %}
 
+        {% if total > limit %}
+            {% for i in total|page_list:limit %}
+                <div id="page{{ i }}" class='page'>
+                    {{ i }}
+                </div>
+            {% endfor %}
+        {% endif %}
     {% endif %}
 </div>

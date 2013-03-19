@@ -29,8 +29,8 @@ class Queryier:
         self.flush_caches()
         self.ft = FreeText.FreeText()
 
-    def search(self, langs, find_all, allow_dangling, qs, host_country, admin_levels=[], limit=None):
-        return self.ft.search(self, langs, find_all, allow_dangling, qs, host_country, admin_levels, limit)
+    def search(self, langs, find_all, allow_dangling, qs, host_country, admin_levels=[], start=None, limit=None):
+        return self.ft.search(self, langs, find_all, allow_dangling, qs, host_country, admin_levels, start, limit)
 
     def flush_caches(self):
         self.country_id_iso2_cache = {}  # These are both too small

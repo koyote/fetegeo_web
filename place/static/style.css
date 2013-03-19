@@ -41,19 +41,15 @@ hr {
     margin-top: 2%;
 }
 
-.linkOFF span {
-    color: #687F9C;
-}
-
-.linkON span {
-    color: #132033;
-    background-color: #697E9C;
-    cursor: pointer;
-}
-
 .results {
     margin-top: 1em;
     padding-left: 2%;
+}
+
+.results span:hover {
+    color: #132033;
+    background-color: #697E9C;
+    cursor: pointer;
 }
 
 .searchForm {
@@ -86,4 +82,14 @@ hr {
     visibility: hidden;
     width: 0;
     height: 0;
+}
+
+.page {
+    display: inline;
+}
+
+.page:hover {
+    color: #132033;
+    background-color: #697E9C;
+    cursor: pointer;
 }

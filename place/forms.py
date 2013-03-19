@@ -33,3 +33,4 @@ class IndexForm(forms.Form):
     dangling = forms.BooleanField(required=False, label='Allow Dangling')
     find_all = forms.BooleanField(required=False, label='Search outside of home country', initial=True)
     limit = forms.ChoiceField(choices=limit_choices, required=False, label='Number of results per page')
+    start = forms.IntegerField(initial=0, widget=forms.HiddenInput())

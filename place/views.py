@@ -59,6 +59,7 @@ def index(request):
             lang = form.cleaned_data['langs']
             dangling = form.cleaned_data['dangling']
             find_all = form.cleaned_data['find_all']
+            start = form.cleaned_data['start']
             limit = ast.literal_eval(form.cleaned_data['limit'])
 
             if not lang:
@@ -68,12 +69,14 @@ def index(request):
                 error = True
             else:
                 with Timer():
-                    result = q.search([lang], find_all, dangling, query, ctry, limit=limit)
+                    result = q.search([lang], find_all, dangling, query, ctry, start=start, limit=limit)
                 if not result:
                     return _rtr(request, renderHtmls, {'no_result': True, 'q': query, 'user_lon_lat': user_lon_lat})
                 else:
+                    place_names, postcode_names, places, total_results = result
                     return _rtr(request, renderHtmls,
-                                {'place_names': result[0], 'postcode_names': result[1], 'places': result[2], 'user_lon_lat': user_lon_lat})
+                                {'form': form, 'place_names': place_names, 'postcode_names': postcode_names, 'places': places, 'total': total_results,
+                                 'limit': limit, 'user_lon_lat': user_lon_lat})
     else:
         form = IndexForm()
 
@@ -103,7 +106,7 @@ def geo(request, query, format=None):
     if not result:
         return Response(dict(error="True", query=query))
 
-    place_names, postcode_names, places = result
+    place_names, postcode_names, places, _ = result
     place_names.update(postcode_names)
     res = [SerialisableResult(x, place_names[x.id]) for x in places]
     serialiser = ResultSerialiser(res, many=True, context={'show_all': show_all})
