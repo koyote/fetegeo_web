@@ -1,4 +1,6 @@
 var map, vector, geojsonFormat, result = {};
+var form = $("#searchForm"), startEl = $("#id_start"), limit = $("#id_limit").val();
+
 var spinOpts = {
     lines: 9, // The number of lines to draw
     length: 0, // The length of each line
@@ -88,11 +90,6 @@ function resultOnclick() {
 
 // Click handler for page numbers
 function pageOnclick() {
-    var startEl = jQuery("#id_start");
-    var limit = jQuery("#id_limit").val();
-    var form = jQuery("#searchForm");
-    var current = jQuery("#page1");
-
     $('div[class^=page]').each(function () {
         var pageNum = parseInt($(this).text());
         $(this).click(function (e) {
@@ -106,9 +103,9 @@ function pageOnclick() {
 
 // Populate Results List with ajax
 jQuery(function () {
-           var form = jQuery("#searchForm");
-           var sb = jQuery("#searchButton");
-           var ajw = jQuery("#ajaxwrapper");
+           var sb = $("#searchButton");
+           var ajw = $("#ajaxwrapper");
+
            form.submit(function (e) {
                sb.attr('disabled', true);
                ajw.empty();
