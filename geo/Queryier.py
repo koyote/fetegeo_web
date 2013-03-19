@@ -29,8 +29,8 @@ class Queryier:
         self.flush_caches()
         self.ft = FreeText.FreeText()
 
-    def search(self, langs, find_all, allow_dangling, qs, host_country):
-        return self.ft.search(self, langs, find_all, allow_dangling, qs, host_country)
+    def search(self, langs, find_all, allow_dangling, qs, host_country, admin_levels=[], limit=None):
+        return self.ft.search(self, langs, find_all, allow_dangling, qs, host_country, admin_levels, limit)
 
     def flush_caches(self):
         self.country_id_iso2_cache = {}  # These are both too small
@@ -40,7 +40,8 @@ class Queryier:
         self.place_name_cache = Temp_Cache.Cached_Dict(Temp_Cache.LARGE_CACHE_SIZE)
         self.place_pp_cache = Temp_Cache.Cached_Dict(Temp_Cache.LARGE_CACHE_SIZE)
         self.parent_cache = Temp_Cache.Cached_Dict(Temp_Cache.LARGE_CACHE_SIZE)
-        self.results_cache = Temp_Cache.Cached_Dict(Temp_Cache.SMALL_CACHE_SIZE)
+        self.results_cache = Temp_Cache.Cached_Dict(Temp_Cache.LARGE_CACHE_SIZE)
+        self.limit_cache = Temp_Cache.Cached_Dict(Temp_Cache.LARGE_CACHE_SIZE)
         self.merged_location_cache = Temp_Cache.Cached_Dict(Temp_Cache.LARGE_CACHE_SIZE)
 
     def pp_place(self, place):

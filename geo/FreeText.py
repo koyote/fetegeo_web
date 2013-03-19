@@ -39,7 +39,7 @@ _RE_EU_ZIP = re.compile('^[A-Za-z]{1,3}-[0-9]{3,10}$')
 
 
 class FreeText:
-    def search(self, queryier, langs, find_all, allow_dangling, qs, host_country, admin_levels=[]):
+    def search(self, queryier, langs, find_all, allow_dangling, qs, host_country, admin_levels, limit):
         self.queryier = queryier
         self.qs = _cleanup(qs)
         self.split, self.split_indices = _split(self.qs)
@@ -50,9 +50,16 @@ class FreeText:
         self.host_country = host_country
         self.admin_levels = admin_levels
 
-        results_cache_key = (tuple(langs), find_all, allow_dangling, self.qs, host_country)
+        results_cache_key = (tuple(langs), find_all, allow_dangling, self.qs, host_country, limit)
         if results_cache_key in queryier.results_cache:
             return queryier.results_cache[results_cache_key]
+
+        # If we're just retrieving the next pair of results, we don't want to recompute everything, so the prior results should be in the cache somewhere.
+        limit_cache_key = (tuple(langs), find_all, allow_dangling, self.qs, host_country)
+        if limit_cache_key in queryier.limit_cache:
+            place_names, postcode_names, sorted_places = self._process_pp(queryier.limit_cache[limit_cache_key][0], queryier.limit_cache[limit_cache_key][1], limit)
+            queryier.results_cache[results_cache_key] = place_names, postcode_names, sorted_places
+            return place_names, postcode_names, sorted_places
 
         # _matches is a list of lists storing all the matched places (and postcodes etc.) at a given
         # point in the split. self._longest_match is a convenience integer which records the longest
@@ -113,12 +120,15 @@ class FreeText:
         else:
             dangling = ""
 
-        # Merge results
+        # Build map of id to Results
         result_map = {m.osm_id: Results.Result(m, dangling) for m in results}
-        place_names, postcode_names, merged_places = self._merge_results(result_map)
+
+        # Merge results and cache
+        merged_places = self._merge_results(result_map)
+        queryier.limit_cache[limit_cache_key] = merged_places, result_map
 
         # Sort results
-        sorted_places = self._sort_results(merged_places)
+        place_names, postcode_names, sorted_places = self._process_pp(merged_places, result_map, limit)
 
         queryier.results_cache[results_cache_key] = place_names, postcode_names, sorted_places
 
@@ -306,7 +316,7 @@ class FreeText:
         Method takes a dict of osm_id:results produced by the search command.
         It will try and merge LineStrings that are close enough to other LineStrings to be considered part of the same street.
         It will also ignore any duplicate places.
-        The method returns a list of places and a dict of place.id's to pretty print place_names.
+        The method returns a list of merged places.
         """
         ls = {}
         places = []
@@ -332,12 +342,21 @@ class FreeText:
                 places.append(place)
 
         places.extend(ls.values())
+        return places
 
+    def _process_pp(self, places, q_res, limit):
+        """
+        Computes the pretty print names for a given list of places.
+        Returns a list of sorted places and a dict of place.id's to pretty print place_names
+        """
         place_names = {}
         postcode_names = {}
         final_places = []
 
-        for p in places:
+        # We sort the results here.
+        # It would speed up the process if the results were sorted and limited before entering this method; alas the sorting algorithm would not take the
+        # newly merged locations into account.
+        for p in self._sort_results(places)[:limit]:
             # Cache locations in order to retrieve them easily onclick in the webview.
             key = str(p.id) + p.__class__.__name__  # we append the result type as a postcode might have the same id as a place
             cache.set(key, p.location.geojson, 99999)
@@ -365,6 +384,7 @@ class FreeText:
 
         results.sort(
             key=lambda x: (-x.population if x.population else 0, -x.area if x.area else 0, -x.location.length if (x.location and x.location.length) else 0))
+
         # Put results from the host_country first.
         if self.host_country is not None:
             results.sort(key=lambda x: (x.country is None, x.country == self.host_country))

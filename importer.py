@@ -46,7 +46,7 @@ class Timer:
     def __enter__(self):
         self.start = time.time()
 
-    def __exit__(self):
+    def __exit__(self, *args):
         interval = time.time() - self.start
         if interval < 60:
             print("Time: {:.2f} seconds.".format(interval))
@@ -76,7 +76,7 @@ def _import_data(cursor):
 
 def _execute_postgis(cursor):
     """
-    Run PostGIS commands on the databse for cleaning up geometry objects and calculating relationships
+    Run PostGIS commands on the database for cleaning up geometry objects and calculating relationships
     between different locations.
     """
     try:

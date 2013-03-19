@@ -23,10 +23,13 @@
 from django import forms
 from place.models import Lang
 
+limit_choices = [(10, '10'), (20, '20'), (None, 'All')]
+lang_choices = [('', "Choose Language")] + [(x.id, x.name) for x in Lang.objects.order_by('name')]
+
 
 class IndexForm(forms.Form):
     query = forms.CharField()
-    langs = forms.ChoiceField(choices=[('', "Choose Language")] + [(x.id, x.name) for x in Lang.objects.order_by('name')], required=False,
-                              label='Language')
+    langs = forms.ChoiceField(choices=lang_choices, required=False, label='Language')
     dangling = forms.BooleanField(required=False, label='Allow Dangling')
     find_all = forms.BooleanField(required=False, label='Search outside of home country', initial=True)
+    limit = forms.ChoiceField(choices=limit_choices, required=False, label='Number of results per page')
