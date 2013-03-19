@@ -98,30 +98,29 @@ function pageOnclick() {
             startEl.val(0); // needed for the search button to operate properly again
         });
     });
-
 }
 
 // Populate Results List with ajax
-jQuery(function () {
-           var sb = $("#searchButton");
-           var ajw = $("#ajaxwrapper");
+$(function () {
+      var sb = $("#searchButton");
+      var ajw = $("#ajaxwrapper");
 
-           form.submit(function (e) {
-               sb.attr('disabled', true);
-               ajw.empty();
-               ajw.spin(spinOpts);
-               ajw.load(
-                   '/ #ajaxwrapper',
-                   form.serializeArray(),
-                   function () {
-                       sb.attr('disabled', false);
-                       resultOnclick();
-                       pageOnclick();
-                   }
-               );
-               e.preventDefault();
-           });
-       }
+      form.submit(function (e) {
+          sb.attr('disabled', true);
+          ajw.empty();
+          ajw.spin(spinOpts);
+          ajw.load(
+              '/ #ajaxwrapper',
+              form.serializeArray(),
+              function () {
+                  sb.attr('disabled', false);
+                  resultOnclick();
+                  pageOnclick();
+              }
+          );
+          e.preventDefault();
+      });
+  }
 );
 
 // JQuery plugin for spinner
