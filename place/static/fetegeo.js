@@ -91,6 +91,7 @@ function pageOnclick() {
     var startEl = jQuery("#id_start");
     var limit = jQuery("#id_limit").val();
     var form = jQuery("#searchForm");
+    var current = jQuery("#page1");
 
     $('div[class^=page]').each(function () {
         var pageNum = parseInt($(this).text());
@@ -100,6 +101,7 @@ function pageOnclick() {
             startEl.val(0); // needed for the search button to operate properly again
         });
     });
+
 }
 
 // Populate Results List with ajax

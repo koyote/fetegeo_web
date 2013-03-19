@@ -41,6 +41,10 @@ hr {
     margin-top: 2%;
 }
 
+.result_list {
+    padding-bottom: 2%;
+}
+
 .results {
     margin-top: 1em;
     padding-left: 2%;
@@ -86,6 +90,7 @@ hr {
 
 .page {
     display: inline;
+    font-weight: bold;
 }
 
 .page:hover {
