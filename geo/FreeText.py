@@ -388,7 +388,7 @@ class FreeText:
         """
 
         results.sort(
-            key=lambda x: (-x.population if x.population else 0, -x.location.length if (x.location and x.location.length) else 0))
+            key=lambda x: (-x.population if isinstance(x,Place) and x.population else 0, -x.location.length if (x.location and x.location.length) else 0))
 
         # Put results from the host_country first.
         if self.host_country is not None:
