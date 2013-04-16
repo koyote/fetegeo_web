@@ -93,14 +93,15 @@ class Queryier:
         al = 10
         names = [(n.place_id, n.type_id, n.name, n.lang) for n in PlaceName.objects.prefetch_related('lang').only().filter(place__id__in=ids)]
         for i in ids:
+            best = False
             for n in [n for n in names if n[0] == int(i)]:
                 if n[3] in langs:
                     pp[al] = n[2]
                     break
                 elif n[1] == get_type_id('name'):
                     pp[al] = n[2]
-                    break
-                else:
+                    best = True
+                elif not best:
                     pp[al] = n[2]
             al -= 1
 

@@ -86,7 +86,7 @@ def _execute_postgis(cursor):
                 if line.startswith("--"):
                     comment = line.replace("--", "").strip()
                     if 'Vacuum Analyse' in comment:
-                        _vacuum_analyze(cursor)
+                        _vacuum_analyse(cursor)
                     continue
 
                 query += line
@@ -104,11 +104,11 @@ def _execute_postgis(cursor):
         sys.exit(1)
 
 
-def _vacuum_analyze(cursor):
+def _vacuum_analyse(cursor):
     """
-    Vacuum analyze needs to be run from a different isolation level.
+    Vacuum analyse needs to be run from a different isolation level.
     """
-    print('Vacuum Analyze')
+    print('Vacuum Analyse')
     with Timer():
         old_iso_level = connection.connection.isolation_level
         connection.connection.set_isolation_level(0)
@@ -147,7 +147,7 @@ if __name__ == "__main__":
         elif args.osm_file.endswith('.pbf'):
             read = '--read-pbf-fast'
         else:
-            sys.stderr.write("Osmosis file must be in bz2, xml or pbg format.\n")
+            sys.stderr.write("Osmosis file must be in bz2, xml or pbf format.\n")
             sys.exit(1)
 
         osmosis_command = shlex.split('osmosis {read} file={file} --fimp outdir={outdir}'.format(read=read, file=args.osm_file, outdir=_IMPORT_DIR))
@@ -163,5 +163,5 @@ if __name__ == "__main__":
         _import_data(cursor)
         print("\nExecuting PostGIS statements...")
         _execute_postgis(cursor)
-        _vacuum_analyze(cursor)
+        _vacuum_analyse(cursor)
         _population()
