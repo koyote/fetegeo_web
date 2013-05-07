@@ -217,6 +217,8 @@ class FreeText:
                     continue
 
                 new_i = _match_end_split([unidecode(x) for x in self.split], i, unidecode(p.name))
+                if not new_i:
+                    new_i = _match_end_split([x for x in self.split], i, p.name)
                 assert new_i < i
                 new_parent_places = [p.place] + parent_places
                 record_match = False
