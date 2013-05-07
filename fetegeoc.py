@@ -100,6 +100,8 @@ class Fetegeoc:
 
         i = 1
         for result in data:
+            if i != 1:
+                print()
             print("Match #{}".format(i))
             self._print_wrap("{0}: {1}\n".format("Pretty Print", result["pp"]))
             self._print_wrap("{0}: {1}\n".format("OSM ID", result["osm_id"]))
