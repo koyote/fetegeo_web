@@ -87,21 +87,22 @@ def geo(request, query, format=None):
     """
     Method dealing with the API requests to geo. Uses the same method for fetching results as index.
     """
-
     dangling = ast.literal_eval(request.DATA['dangling'])  # Convert String to Boolean
     find_all = ast.literal_eval(request.DATA['find_all'])
     show_all = ast.literal_eval(request.DATA['show_all'])
     lang_str = request.DATA['langs']
+    ctry = Country.objects.get(iso3166_2=request.DATA['country'])
 
     langs = _find_langs(lang_str)
-    _, ctry = _get_coor_and_country(request)
+
+    if not ctry:
+        _, ctry = _get_coor_and_country(request)
 
     if not langs:
         langs = [_DEFAULT_LANG]
 
     result = q.search(langs, find_all, dangling, query, ctry)
-
-    if not result:
+    if not result or not result[0]:
         return Response(dict(error="True", query=query))
 
     place_names, postcode_names, places, _ = result

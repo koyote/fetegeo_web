@@ -34,7 +34,7 @@ import httplib2
 _VERSION = "0.3"
 
 _DEFAULT_HOST = "127.0.0.1"
-_DEFAULT_PORT = 8001
+_DEFAULT_PORT = 8000
 _DEFAULT_LANG = ["EN"]  # English
 
 _DESCRIPTION = 'Fetegeo Geocoder ' + _VERSION
@@ -43,6 +43,7 @@ _A_HELP = 'Find only matches in the host country.'
 _L_HELP = 'Specify the preferred language(s) for results to be returned in. Multiple -l options can be specified; they will be treated in descending order of preference.'
 _SA_HELP = 'If enabled it will print out the whole area as opposed to only the centroid.'
 _D_HELP = 'If enabled the search will discard the left parts of the query that did not match.'
+_C_HELP = 'Search only for places in the specified country (ISO code).'
 
 
 class Fetegeoc:
@@ -77,6 +78,7 @@ class Fetegeoc:
         parser_geo.add_argument('-a', '--find-all', action='store_false', help=_A_HELP)
         parser_geo.add_argument('--fl', '--full-location', action='store_true', help=_SA_HELP)
         parser_geo.add_argument('-d', '--allow-dangling', action='store_true', help=_D_HELP)
+        parser_geo.add_argument('-c', '--country', type=str, help=_C_HELP)
         parser_geo.set_defaults(func=self._q_geo)
 
         args = parser.parse_args()
@@ -99,10 +101,10 @@ class Fetegeoc:
         i = 1
         for result in data:
             print("Match #{}".format(i))
+            self._print_wrap("{0}: {1}\n".format("Pretty Print", result["pp"]))
             self._print_wrap("{0}: {1}\n".format("OSM ID", result["osm_id"]))
             self._print_wrap("{0}: {1}\n".format("Location Type", result["location"][0]["type"]))
             self._print_wrap("{0}: {1}\n".format("Location Coordinates", result["location"][1]["coordinates"]))
-            self._print_wrap("{0}: {1}\n".format("Pretty Print", result["pp"]))
             population = result["population"]
             if population:
                 self._print_wrap("{0}: {1}".format("Population", population))
@@ -131,7 +133,7 @@ class Fetegeoc:
 
     def _handle_error(self, data):
         if 'error' in data:
-            print("No match found for {}.\n".format(data["query"]))
+            print("No match found for {}.".format(data["query"]))
             sys.exit(0)
 
     def _handle_status(self, status):
@@ -142,7 +144,7 @@ class Fetegeoc:
             elif status == 500:
                 sys.stderr.write("Server error. Please try again later.\n")
                 sys.exit(1)
-            sys.stderr.write("Unknown error\n")
+            sys.stderr.write("Error: " + str(status) + "\n")
             sys.exit(1)
 
     def _q_geo(self, args):
@@ -151,7 +153,7 @@ class Fetegeoc:
         """
 
         query = quote(" ".join(args.qs))
-        options = dict(find_all=args.find_all, dangling=args.allow_dangling, langs=args.lang, show_all=args.fl)
+        options = dict(find_all=args.find_all, dangling=args.allow_dangling, langs=args.lang, show_all=args.fl, country=args.country)
         url = 'http://{host}:{port}/api/geo/{query}.json'.format(host=args.host, port=args.port, query=query)
         response, content = self._conn.request(url, 'POST', urlencode(options), {'Content-type': 'application/x-www-form-urlencoded'})
 
