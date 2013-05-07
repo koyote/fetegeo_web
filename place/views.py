@@ -91,11 +91,11 @@ def geo(request, query, format=None):
     find_all = ast.literal_eval(request.DATA['find_all'])
     show_all = ast.literal_eval(request.DATA['show_all'])
     lang_str = request.DATA['langs']
-    ctry = Country.objects.get(iso3166_2=request.DATA['country'])
-
     langs = _find_langs(lang_str)
 
-    if not ctry:
+    try:
+        ctry = Country.objects.get(iso3166_2=request.DATA['country'])
+    except ObjectDoesNotExist:
         _, ctry = _get_coor_and_country(request)
 
     if not langs:
