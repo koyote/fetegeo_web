@@ -14,7 +14,7 @@ urlpatterns = format_suffix_patterns(urlpatterns, allowed=['json', 'xml'], suffi
 
 urlpatterns += patterns('place.views',
                         url(r'^googlee7a54850b689ff87\.html$', lambda r: HttpResponse("google-site-verification: googlee7a54850b689ff87.html", mimetype="text/plain")),
-                        url(r'^robots\.txt$', lambda r: HttpResponse("User-agent: *\nDisallow: ", mimetype="text/plain")),
+                        url(r'^[Rr]obots\.txt$', lambda r: HttpResponse("User-agent: *\nDisallow: ", mimetype="text/plain")),
                         url(r'$^', index, name='index'),
                         )
 
