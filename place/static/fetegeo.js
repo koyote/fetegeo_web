@@ -87,7 +87,7 @@ function resultOnclick() {
             var result = getResult(this.id, $(this).attr('name'));
             if (result) {
                 populateMap(result);
-                lastResult = $(":first-child",this);
+                lastResult = $(":first-child",this); // child is span; avoids a wide selection, inconsistent with hover
                 lastResult.addClass('active');
             }
         });
@@ -123,9 +123,7 @@ $(function () {
                     sb.attr('disabled', false);
                     resultOnclick();
                     pageOnclick();
-                    console.log(currentPage);
                     var curPage = $(currentPage);
-                    console.log(curPage);
                     if (typeof(curPage) != "undefined") {
                         curPage.addClass('active');
                     }

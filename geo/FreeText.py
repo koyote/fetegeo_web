@@ -363,7 +363,8 @@ class FreeText:
         # We sort the results here.
         # It would speed up the process if the results were sorted and limited before entering this method; alas the sorting algorithm would not take the
         # newly merged locations into account.
-        for p in self._sort_results(places)[start:limit]:
+        soraa = self._sort_results(places)
+        for p in soraa[start:limit]:
             # Cache locations in order to retrieve them easily onclick in the webview.
             key = str(p.id) + p.__class__.__name__  # we append the result type as a postcode might have the same id as a place
             cache.set(key, p.location.geojson, 99999)
@@ -371,9 +372,8 @@ class FreeText:
             # Find the pretty print names for the places
             if isinstance(p, Place):
                 pp = q_res[p.osm_id].print_pp(self.queryier.pp_place, self.admin_levels)
-                if pp not in place_names.values():
-                    place_names[p.id] = pp
-                    final_places.append(p)
+                place_names[p.id] = pp
+                final_places.append(p)
             else:
                 pp = q_res[p.osm_id].print_pp(self.queryier.pp_postcode, self.admin_levels)
                 if pp not in postcode_names.values():
@@ -390,7 +390,7 @@ class FreeText:
         """
 
         results.sort(
-            key=lambda x: (-x.population if isinstance(x,Place) and x.population else 0, -x.location.length if (x.location and x.location.length) else 0))
+            key=lambda x: (-x.population if isinstance(x, Place) and x.population else 0, -x.location.length if (x.location and x.location.length) else 0))
 
         # Put results from the host_country first.
         if self.host_country is not None:
