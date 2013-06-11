@@ -13,7 +13,7 @@ MANAGERS = ADMINS
 DATABASES = {
     'default': {
         'ENGINE': 'django.contrib.gis.db.backends.postgis',
-        'NAME': 'uk',
+        'NAME': 'luxembourg',
         'USER': 'koy',
         'PASSWORD': '',
         'HOST': '',

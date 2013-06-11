@@ -31,7 +31,7 @@ small > a {
     text-decoration: none;
 }
 
-form  {
+form {
     border-style: none;
 }
 
@@ -46,17 +46,6 @@ form  {
 
 .result_list {
     padding-bottom: 2%;
-}
-
-.results {
-    margin-top: 1em;
-    padding-left: 2%;
-}
-
-.results span:hover {
-    color: #132033;
-    background-color: #697E9C;
-    cursor: pointer;
 }
 
 .searchForm {
@@ -96,8 +85,20 @@ form  {
     font-weight: bold;
 }
 
-.page:hover {
-    color: #132033;
-    background-color: #697E9C;
+.page:hover,
+.active {
+    color: #435263;
+    background-color: #92A0B1;
+    cursor: pointer;
+}
+
+.results {
+    margin-top: 1em;
+    padding-left: 2%;
+}
+
+.results span:hover{
+    color: #435263;
+    background-color: #92A0B1;
     cursor: pointer;
 }

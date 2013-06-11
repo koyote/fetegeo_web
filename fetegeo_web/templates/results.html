@@ -13,7 +13,7 @@
             <h3>Places</h3>
             <div class='result_list'>
                 {% for place in places %}
-                    <div id='{{ place.id }}' class='results linkOFF' name='Place'>
+                    <div id='{{ place.id }}' class='results' name='Place'>
                         <span>{{ place_names|get_item:place.id }}</span>
                     </div>
                 {% endfor %}
@@ -24,7 +24,7 @@
             <h3>Postcodes</h3>
             <div class='result_list'>
                 {% for place in places %}
-                    <div id='{{ place.id }}' class='results linkOFF' name='Postcode'>
+                    <div id='{{ place.id }}' class='results' name='Postcode'>
                         <span>{{ postcode_names|get_item:place.id }}</span>
                     </div>
                 {% endfor %}
