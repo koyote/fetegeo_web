@@ -123,7 +123,7 @@ $(function () {
                     sb.attr('disabled', false);
                     resultOnclick();
                     pageOnclick();
-                    var curPage = $(currentPage);
+                    var curPage = $(":first-child", currentPage);
                     if (typeof(curPage) != "undefined") {
                         curPage.addClass('active');
                     }

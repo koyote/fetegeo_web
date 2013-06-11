@@ -85,7 +85,7 @@ form {
     font-weight: bold;
 }
 
-.page:hover,
+.page span:hover,
 .active {
     color: #435263;
     background-color: #92A0B1;
@@ -95,6 +95,10 @@ form {
 .results {
     margin-top: 1em;
     padding-left: 2%;
+}
+
+.results span, .page span {
+    padding: 5px;
 }
 
 .results span:hover{

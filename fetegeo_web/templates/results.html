@@ -34,7 +34,7 @@
         {% if total > limit %}
             {% for i in total|page_list:limit %}
                 <div id="page{{ i }}" class='page'>
-                    {{ i }}
+                    <span>{{ i }}</span>
                 </div>
             {% endfor %}
         {% endif %}
