@@ -1,14 +1,17 @@
 html, body {
     margin: 0;
     padding: 0;
-    background-color: #020203;
-    color: #687F9C;
-    font-family: 'Ubuntu', sans-serif;
+    background-color: #435263;
+    color: #92A0B1;
+    font-family: 'Lato', sans-serif;
     height: 95%;
 }
 
 header {
-    background-color: #132033;
+    font-weight: bolder;
+    color: #869AB1;
+    font-family: 'Nunito', sans-serif;
+    background-color: #394656;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -28,8 +31,8 @@ small > a {
     text-decoration: none;
 }
 
-hr {
-    border-color: #132033;
+form  {
+    border-style: none;
 }
 
 #map {
