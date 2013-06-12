@@ -28,7 +28,7 @@ lang_choices = [('', "Choose Language")] + [(x.id, x.name) for x in Lang.objects
 
 
 class IndexForm(forms.Form):
-    query = forms.CharField()
+    query = forms.CharField(max_length=255)
     langs = forms.ChoiceField(choices=lang_choices, required=False, label='Language')
     dangling = forms.BooleanField(required=False, label='Allow Dangling')
     find_all = forms.BooleanField(required=False, label='Search outside of home country', initial=True)
