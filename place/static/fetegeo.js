@@ -1,5 +1,6 @@
-var map, vector, geojsonFormat, result = {};
+var map, vector, geojsonFormat, lastResult, result = {};
 var form = $("#searchForm"), startEl = $("#id_start"), limit = $("#id_limit").val();
+var currentPage = '#page1';
 
 var spinOpts = {
     lines: 9, // The number of lines to draw
@@ -46,15 +47,15 @@ function getResult(id, type) {
     var r = id + type;
     if (!result[r]) {
         $.ajax({
-                   type: "GET",
-                   url: "/api/loc/" + type + "/" + id + ".json",
-                   async: false,
-                   dataType: 'json'
-               }).done(function (data) {
-                           if (!data.error) {
-                               result[r] = data.geometry;
-                           }
-                       });
+            type: "GET",
+            url: "/api/loc/" + type + "/" + id + ".json",
+            async: false,
+            dataType: 'json'
+        }).done(function (data) {
+                if (!data.error) {
+                    result[r] = data.geometry;
+                }
+            });
     }
     return result[r];
 }
@@ -80,9 +81,14 @@ function populateMap(result) {
 function resultOnclick() {
     $('div[class^=results]').each(function () {
         $(this).click(function () {
+            if (typeof(lastResult) != "undefined") {
+                lastResult.removeClass('active');
+            }
             var result = getResult(this.id, $(this).attr('name'));
             if (result) {
                 populateMap(result);
+                lastResult = $(":first-child",this); // child is span; avoids a wide selection, inconsistent with hover
+                lastResult.addClass('active');
             }
         });
     });
@@ -92,35 +98,40 @@ function resultOnclick() {
 function pageOnclick() {
     $('div[class^=page]').each(function () {
         var pageNum = parseInt($(this).text());
-        $(this).click(function (e) {
+        $(this).click(function () {
             startEl.val(limit * (pageNum - 1));
             form.submit();
             startEl.val(0); // needed for the search button to operate properly again
+            currentPage = '#page' + $(this).text().trim();
         });
     });
 }
 
 // Populate Results List with ajax
 $(function () {
-      var sb = $("#searchButton");
-      var ajw = $("#ajaxwrapper");
+        var sb = $("#searchButton");
+        var ajw = $("#ajaxwrapper");
 
-      form.submit(function (e) {
-          sb.attr('disabled', true);
-          ajw.empty();
-          ajw.spin(spinOpts);
-          ajw.load(
-              '/ #ajaxwrapper',
-              form.serializeArray(),
-              function () {
-                  sb.attr('disabled', false);
-                  resultOnclick();
-                  pageOnclick();
-              }
-          );
-          e.preventDefault();
-      });
-  }
+        form.submit(function (e) {
+            sb.attr('disabled', true);
+            ajw.empty();
+            ajw.spin(spinOpts);
+            ajw.load(
+                '/ #ajaxwrapper',
+                form.serializeArray(),
+                function () {
+                    sb.attr('disabled', false);
+                    resultOnclick();
+                    pageOnclick();
+                    var curPage = $(":first-child", currentPage);
+                    if (typeof(curPage) != "undefined") {
+                        curPage.addClass('active');
+                    }
+                }
+            );
+            e.preventDefault();
+        });
+    }
 );
 
 // JQuery plugin for spinner
