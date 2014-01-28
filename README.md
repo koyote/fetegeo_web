@@ -12,6 +12,8 @@ At the moment the excellent Django plugin [Django REST framework](http://django-
 On the client side the Fetegeo command line client (fetegeoc) has been completely rewritten to support the new HTTP-based API.
 An additional web client running on Django has also been created. This uses [OpenLayers](http://openlayers.org/) to display search results on a map.
 
+A working Demo can (sometimes) be found at [Fetegeo Webview](http://www.pitapps.com).
+
 
 ##Requirements:
  - Python 3+
